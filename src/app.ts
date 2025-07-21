@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import routerAdmin from './router-admin';
 
 // Entrance
 const app = express();
@@ -16,6 +17,9 @@ app.use(express.json());
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-// Router
+// Routers
+app.use('/admin', routerAdmin); 
+
+
 
 export default app;
