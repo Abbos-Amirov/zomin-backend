@@ -1,0 +1,11 @@
+{
+  "name": "zam-zam",
+  "version": "1.0.0",
+  "description": "virtual system of restaurant",
+  "main": "src/server.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jay",
+  "license": "MIT"
+}
