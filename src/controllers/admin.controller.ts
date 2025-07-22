@@ -1,6 +1,9 @@
 import { T } from '../libs/types/common';
 import { Request, Response } from 'express';
 import MemberService from '../models/Member.service';
+import { MemberInput } from '../libs/types/member';
+import { MemberType } from '../libs/enums/member.enum';
+import Errors, { Message } from '../libs/Errors';
 
 const memberService = new MemberService;
 
@@ -39,14 +42,24 @@ adminController.getLogin = (req: Request, res: Response) => {
     }
 };
 
-adminController.processSignup = (req: Request, res: Response) => {
+adminController.processSignup = async (req: Request, res: Response) => {
     try{
         console.log("processSignup");
-        res.send("processSignup");
+
+        const newMember: MemberInput = req.body;
+        newMember.memberType = MemberType.RESTAURANT;
+        const result = await memberService.processSignup(newMember);
+        // TODO AUTHENTICATION
+
+        res.json({result: result});
     }
     catch(err){
         console.log("Error, processSignup: ", err);
-        res.redirect('/admin/signup');
+        const message =
+         err instanceof Errors ? err.message : Message.SOMETHING_WENT_WRONG;
+        res.send(
+            `<script> alert("${message}"); window.location.replace('/admin/signup')</script>`
+        );
     }
 };
 
