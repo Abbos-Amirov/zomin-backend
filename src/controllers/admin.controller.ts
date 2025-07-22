@@ -1,7 +1,8 @@
 import { T } from '../libs/types/common';
 import { Request, Response } from 'express';
+import MemberService from '../models/Member.service';
 
-
+const memberService = new MemberService;
 
 const adminController: T = {};
 
