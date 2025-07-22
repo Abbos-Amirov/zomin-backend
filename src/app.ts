@@ -3,6 +3,7 @@ import path from 'path';
 import routerAdmin from './router-admin';
 import morgan from 'morgan';
 import { MORGAN_FORMAT } from './libs/config';
+import router from './router';
 
 // Entrance
 const app = express();
@@ -22,6 +23,7 @@ app.set('view engine', 'ejs');
 
 // Routers
 app.use('/admin', routerAdmin); 
+app.use('/', router);
 
 
 
