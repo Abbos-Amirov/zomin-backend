@@ -29,9 +29,7 @@ productController.getAllProducts = async (req: Request, res: Response) => {
 
 productController.createNewProduct = async (req: AdminRequest, res: Response) => {
     try{
-        console.log("req.body>> ", req.body);
         console.log("createNewProduct");
-        console.log("FILES>>", req.files);
         if(!req.files?.length)
             throw new Errors(HttpCode.INTERNAL_SERVER_ERROR, Message.SOMETHING_WENT_WRONG);
 

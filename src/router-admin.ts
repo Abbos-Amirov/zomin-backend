@@ -18,26 +18,35 @@ routerAdmin
 
 // Products
 routerAdmin
-  .get(
-    '/product/all',
-    // restaurantController.verifyRestaurant, 
-    productController.getAllProducts
-  );
-  routerAdmin
-  .post(
-    '/product/create',
-    // restaurantController.verifyRestaurant,
-    makeUploader("products").array("productImages", 5), 
-    productController.createNewProduct
-  );
-    routerAdmin
-  .post(
-    '/product/:id',
-    // restaurantController.verifyRestaurant,
-    productController.updateChosenProduct
-  );
+.get(
+  '/product/all',
+  // restaurantController.verifyRestaurant, 
+  productController.getAllProducts
+);
+routerAdmin
+.post(
+  '/product/create',
+  // restaurantController.verifyRestaurant,
+  makeUploader("products").array("productImages", 5), 
+  productController.createNewProduct
+);
+routerAdmin
+.post(
+  '/product/:id',
+  // restaurantController.verifyRestaurant,
+  productController.updateChosenProduct
+);
 // User
-
+routerAdmin
+.get(
+  '/user/all', 
+  adminController.getUsers
+);
+routerAdmin
+.post(
+  '/user/edit',
+  adminController.updateChosenUser
+);
 
 // Table
 
