@@ -10,41 +10,46 @@ const routerAdmin = Router();
 routerAdmin.get('/', adminController.goHome);
 routerAdmin
 .get('/signup', adminController.getSignup)
-.post('/signup', adminController.processSignup);
+.post(
+  '/signup',
+  makeUploader("members").single("memberImage"), 
+  adminController.processSignup);
 routerAdmin
 .get('/login', adminController.getLogin)
 .post('/login', adminController.processLogin);
-
+routerAdmin.get('/logout', adminController.logout);
 
 // Products
 routerAdmin
 .get(
   '/product/all',
-  // restaurantController.verifyRestaurant, 
+  adminController.verifyRestaurant,
   productController.getAllProducts
 );
 routerAdmin
 .post(
   '/product/create',
-  // restaurantController.verifyRestaurant,
+  adminController.verifyRestaurant,
   makeUploader("products").array("productImages", 5), 
   productController.createNewProduct
 );
 routerAdmin
 .post(
   '/product/:id',
-  // restaurantController.verifyRestaurant,
+  adminController.verifyRestaurant,
   productController.updateChosenProduct
 );
 // User
 routerAdmin
 .get(
-  '/user/all', 
+  '/user/all',
+  adminController.verifyRestaurant, 
   adminController.getUsers
 );
 routerAdmin
 .post(
   '/user/edit',
+  adminController.verifyRestaurant,
   adminController.updateChosenUser
 );
 
