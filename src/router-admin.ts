@@ -2,6 +2,7 @@ import { Router } from "express";
 import adminController from "./controllers/admin.controller";
 import productController from "./controllers/product.controller";
 import makeUploader from "./libs/utils/uploader";
+import tableController from "./controllers/table.controller";
 const routerAdmin = Router();
 
 
@@ -54,7 +55,23 @@ routerAdmin
 );
 
 // Table
-
+routerAdmin
+.get(
+  '/table/all', 
+  adminController.verifyRestaurant, 
+  tableController.getAllTables
+);
+routerAdmin
+.post(
+  '/table/create', 
+  adminController.verifyRestaurant, 
+  tableController.createNewTable
+)
+.post(
+  '/table/edit', 
+  adminController.verifyRestaurant, 
+  tableController.updateChosenTable
+);
 
 // Call
 
