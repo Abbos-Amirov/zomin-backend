@@ -73,7 +73,7 @@ routerAdmin
   tableController.updateChosenTable
 );
 
-// Call
+// TableCall
 
 
 // Dashboard
