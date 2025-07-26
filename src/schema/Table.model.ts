@@ -17,7 +17,7 @@ const tableSchema = new Schema(
         tableStatus: {
             type: String,
             enum: TableStatus,
-            default: TableStatus.AVAILABLE,
+            default: TableStatus.CLEANING,
         },  
     },
     { timestamps: true }

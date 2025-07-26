@@ -68,7 +68,7 @@ routerAdmin
   tableController.createNewTable
 )
 .post(
-  '/table/edit', 
+  '/table/:id', 
   adminController.verifyRestaurant, 
   tableController.updateChosenTable
 );
