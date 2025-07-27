@@ -4,6 +4,7 @@ import productController from "./controllers/product.controller";
 import makeUploader from "./libs/utils/uploader";
 import tableController from "./controllers/table.controller";
 import tableCallController from "./controllers/tableCall.controller";
+import orderController from "./controllers/order.controller";
 const routerAdmin = Router();
 
 
@@ -86,6 +87,25 @@ routerAdmin
   '/call/:id',
   adminController.verifyRestaurant,
   tableCallController.updateChosenCall
+);
+
+// Orders
+routerAdmin
+.get(
+  '/order/all',
+  adminController.verifyRestaurant,
+  orderController.getAllOrders
+);
+routerAdmin
+.post(
+  '/order/create',
+  adminController.verifyRestaurant,
+  orderController.createNewOrder
+)
+.post(
+  '/orders/:id',
+  adminController.verifyRestaurant,
+  orderController.updateChosenOrder
 );
 
 // Dashboard

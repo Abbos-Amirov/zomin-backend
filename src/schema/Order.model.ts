@@ -1,4 +1,4 @@
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { OrderType, PaymentMethod, PaymentStatus } from "../libs/enums/order.enum";
 import { OrderStatus } from "../libs/enums/order.enum";
 
@@ -27,12 +27,12 @@ const orderSchema = new Schema(
       },
 
       tableId: {
-        type: Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'Table',
       },
 
       memberId: {
-        type: Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'Member',
       },
 
@@ -43,7 +43,7 @@ const orderSchema = new Schema(
       paymentStatus: {
         type: String,
         enum: PaymentStatus,
-        required: true,
+        default: PaymentStatus.UNPAID,
       },
 
       paymentMethod: {
