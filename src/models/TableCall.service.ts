@@ -1,5 +1,4 @@
 import { shapeIntoMongooseObjectId } from "../libs/config";
-import { CallType } from "../libs/enums/tableCall.enum";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { TableCall, TableCallInput, TableCallUpdateInput } from "../libs/types/tableCall";
 import TableCallModel from "../schema/TableCall.model";
