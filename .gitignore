@@ -2,3 +2,4 @@ node_modules
 uploader
 dist
 .env
+.DS_Store
