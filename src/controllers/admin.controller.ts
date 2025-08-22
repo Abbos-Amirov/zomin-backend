@@ -12,7 +12,7 @@ const adminController: T = {};
 adminController.goHome = (req: Request, res: Response) => {
     try{
         console.log("goHome");
-        res.render("home");
+        res.render("dashboard");
     }
     catch(err){
         console.log("Error, goHome: ", err);

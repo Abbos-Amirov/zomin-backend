@@ -3,7 +3,6 @@ import adminController from "./controllers/admin.controller";
 import productController from "./controllers/product.controller";
 import makeUploader from "./libs/utils/uploader";
 import tableController from "./controllers/table.controller";
-import tableCallController from "./controllers/tableCall.controller";
 import orderController from "./controllers/order.controller";
 const routerAdmin = Router();
 
@@ -73,20 +72,6 @@ routerAdmin
   '/table/:id', 
   adminController.verifyRestaurant, 
   tableController.updateChosenTable
-);
-
-// TableCall
-routerAdmin.
-get(
-  '/call/all', 
-  adminController.verifyRestaurant, 
-  tableCallController.getAllCalls
-);
-routerAdmin
-.post(
-  '/call/:id',
-  adminController.verifyRestaurant,
-  tableCallController.updateChosenCall
 );
 
 // Orders
