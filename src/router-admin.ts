@@ -9,12 +9,6 @@ const routerAdmin = Router();
 
 // Products
 routerAdmin
-.get(
-  '/product/all',
-  // TODO: AUTH
-  productController.getAllProducts
-);
-routerAdmin
 .post(
   '/product/create',
   // TODO: AUTH
@@ -25,6 +19,7 @@ routerAdmin
 .post(
   '/product/:id',
   // TODO: AUTH
+  makeUploader("products").array("productImages", 5), 
   productController.updateChosenProduct
 );
 
