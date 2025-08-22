@@ -10,7 +10,7 @@ class AuthService {
     this.secretToken = process.env.SECRET_TOKEN;
   }
 
-  public createToken(payload: Member | Table){
+  public createToken(payload: any){
     return new Promise((resolve, reject) => {
       const duration = `${AUTH_TIMER}h`;
       jwt.sign(
@@ -30,12 +30,12 @@ class AuthService {
     });
   }
 
-  public async checkAuth(token: string):Promise <Member | Table> {
-    const result: Member|Table = (await jwt.verify(
+  public async checkAuth(token: string):Promise <any> {
+    const result: any = (await jwt.verify(
       token, 
       this.secretToken as string
-    )) as Member | Table;
-    console.log("memberNick>>", result._id);
+    )) as any;
+    console.log("memberNick>>", result.memberNick);
     return result;
   }
 

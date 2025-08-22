@@ -2,22 +2,69 @@ import OrderService from "../models/Order.service";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { T } from "../libs/types/common";
 import { Request, Response } from "express";
-import { OrderInquiry } from "../libs/types/order";
+import { OrderInquiry, OrderUpdateInput } from "../libs/types/order";
 import { OrderStatus, OrderType } from "../libs/enums/order.enum";
 import { PaymentMethod } from "../libs/enums/order.enum";
+import { ExtendedRequest } from "../libs/types/member";
 
 const orderService = new OrderService();
 
 const orderController: T = {};
 
 /** MEMBER */
+orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
+  try {
+    console.log("createOrder");
+
+    const result = await orderService.createOrder(req.member, req.body);
+
+    res.status(HttpCode.CREATED).json({ result });
+  } catch (err) {
+    console.log("Error, createOrder:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+orderController.getMyOrders = async (req: ExtendedRequest, res: Response) => {
+  try {
+    console.log("getMyOrders");
+    const { page, limit, orderStatus } = req.query;
+    const inquiry: OrderInquiry = {
+      page: Number(page),
+      limit: Number(limit),
+      orderStatus: orderStatus as OrderStatus,
+    };
+
+    const result = await orderService.getMyOrders(req.member, inquiry);
+
+    res.status(HttpCode.CREATED).json({ result });
+  } catch (err) {
+    console.log("Error, getMyOrders:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+orderController.updateOrder = async (req: ExtendedRequest, res: Response) => {
+  try {
+    console.log("updateOrder");
+    const input: OrderUpdateInput = req.body;
+    const result = await orderService.updateOrder(req.member, input);
+
+    res.status(HttpCode.CREATED).json({ result });
+  } catch (err) {
+    console.log("Error, updateOrder:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
 
 /** ADMIN */
 orderController.getAllOrders = async (req: Request, res: Response) => {
   try {
     console.log("getAllOrders");
-    const { page, limit, status, payStatus, search, type } = req.body;
-    console.log(req.query)
+    const { page, limit, status, payStatus, search, type } = req.query;
     const inquiry: OrderInquiry = {
       page: Number(page),
       limit: Number(limit),

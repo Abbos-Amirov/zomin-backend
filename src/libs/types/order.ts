@@ -1,47 +1,41 @@
-import { ObjectId } from "mongoose";
-import {
-  OrderStatus,
-  OrderType,
-  PaymentMethod,
-  PaymentStatus,
-} from "../enums/order.enum";
+import {ObjectId} from "mongoose";
+import { OrderStatus, OrderType, PaymentMethod, PaymentStatus } from "../enums/order.enum";
+import { Product } from "./product";
 
-export interface Order {
+export interface OrderItem{
   _id: ObjectId;
-  orderType: OrderType;
-  orderStatus: OrderStatus;
+  itemQuantity:number;
+  itemPrice: number;
+  orderId: ObjectId;
+  productId: ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Order{
+  _id: ObjectId;
   orderTotal: number;
-  deliveryFee: number;
-  tableId: ObjectId;
+  orderDelivery: number;
+  orderStatus: OrderStatus;
   memberId: ObjectId;
-  orderNote?: string;
-  paymentStatus: PaymentStatus;
-  paymentMethod: PaymentMethod;
+  createdAt: Date;
+  updatedAt: Date;
+  /** from aggregations */
+  orderItems: OrderItem[];
+  productData: Product[];
 }
 
-export interface OrderInput {
-  orderType?: OrderType;
-  orderStatus?: OrderStatus;
-  orderTotal?: number;
-  deliveryFee?: number;
-  tableId?: ObjectId;
-  memberId?: ObjectId;
-  orderNote?: string;
-  paymentStatus?: PaymentStatus;
-  paymentMethod: PaymentMethod;
+export interface OrderItemInput {
+  itemQuantity: number;
+  itemPrice: number;
+  productId: ObjectId;
+  orderId?: ObjectId;
 }
 
-export interface OrderUpdateInput {
-  _id: ObjectId;
-  orderType?: OrderType;
-  orderStatus?: OrderStatus;
-  orderTotal?: number;
-  deliveryFee?: number;
-  tableId?: ObjectId;
-  memberId?: ObjectId;
-  orderNote?: string;
-  paymentStatus?: PaymentStatus;
-  paymentMethod?: PaymentMethod;
+
+export interface OrderUpdateInput{
+  orderId: string;
+  orderStatus: OrderStatus;
 }
 
 export interface OrderInquiry {
@@ -51,4 +45,17 @@ export interface OrderInquiry {
   status?: OrderStatus;
   payStatus?: PaymentMethod;
   search?: string;
+  orderStatus?: OrderStatus;
+}
+
+export interface OrderInput{
+  orderType: OrderType;
+  orderStatus?: OrderStatus;
+  orderTotal: number;
+  deliveryFee: number;
+  tableId?: ObjectId;
+  memberId?: ObjectId;
+  orderNote?: string;
+  paymentStatus?: PaymentStatus;
+  paymentMethod?: PaymentMethod;
 }

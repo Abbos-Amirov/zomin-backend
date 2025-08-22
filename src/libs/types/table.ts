@@ -1,6 +1,6 @@
 import { ObjectId } from "mongoose";
 import { TableStatus } from "../enums/table.enum";
-import { TableCall } from "./tableCall";
+import { TableCall } from "../enums/tableCall.enum";
 
 export interface Table {
     _id: ObjectId;
@@ -23,6 +23,7 @@ export interface TableUpdateInput {
     tableNumber?: string;
     qrToken?: string;
     tableStatus: TableStatus;
+    tableCall?: TableCall;
     
 };
 

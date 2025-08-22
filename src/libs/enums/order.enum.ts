@@ -5,9 +5,9 @@ export enum OrderType {
 }
 
 export enum OrderStatus {
+  PAUSE="PAUSE",
   PENDING="PENDING",
   PROGRESS="PROGRESS",
-  READY="READY",
   COMPLETED="COMPLETED",
   CANCELLED="CANCELLED",
 }

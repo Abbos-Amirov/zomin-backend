@@ -13,7 +13,7 @@ const orderSchema = new Schema(
       orderStatus: {
         type: String,
         enum: OrderStatus,
-        default: OrderStatus.PENDING,
+        default: OrderStatus.PAUSE,
       },
 
       orderTotal: {
@@ -49,7 +49,7 @@ const orderSchema = new Schema(
       paymentMethod: {
         type: String,
         enum: PaymentMethod,
-        required: true,
+        default: PaymentMethod.CARD, //TODO: 
       },
     },
     { timestamps: true }
