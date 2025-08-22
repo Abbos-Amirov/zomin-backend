@@ -19,7 +19,6 @@ adminController.getUsers = async (req: Request, res: Response) => {
   try {
     console.log("getUsers");
     const { page, status, search, limit } = req.query;
-    console.log("req.query:", req.query);
     const inquiry: UserInquiry = {
       page: Number(page),
       limit: Number(limit)
@@ -28,7 +27,6 @@ adminController.getUsers = async (req: Request, res: Response) => {
     if(search) inquiry.search = String(search);
 
     const result = await memberService.getUsers(inquiry);
-    console.log("result>>", result);
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getUsers:", err);

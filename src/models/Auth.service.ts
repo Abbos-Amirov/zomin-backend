@@ -2,6 +2,7 @@ import { Member } from "../libs/types/member";
 import { AUTH_TIMER } from "../libs/config";
 import jwt from "jsonwebtoken";
 import Errors, { HttpCode, Message } from "../libs/Errors";
+import { Table } from "../libs/types/table";
 
 class AuthService {
   private readonly secretToken;
@@ -9,7 +10,7 @@ class AuthService {
     this.secretToken = process.env.SECRET_TOKEN;
   }
 
-  public createToken(payload: Member){
+  public createToken(payload: Member | Table){
     return new Promise((resolve, reject) => {
       const duration = `${AUTH_TIMER}h`;
       jwt.sign(
@@ -29,12 +30,12 @@ class AuthService {
     });
   }
 
-  public async checkAuth(token: string):Promise <Member> {
-    const result: Member = (await jwt.verify(
+  public async checkAuth(token: string):Promise <Member | Table> {
+    const result: Member|Table = (await jwt.verify(
       token, 
       this.secretToken as string
-    )) as Member;
-    console.log("memberNick>>", result.memberNick);
+    )) as Member | Table;
+    console.log("memberNick>>", result._id);
     return result;
   }
 

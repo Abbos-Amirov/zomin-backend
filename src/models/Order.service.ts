@@ -13,7 +13,7 @@ class OrderService {
 
   /** SPA */
 
-  /** SSR */
+  /** ADMIN */
   public async getAllOrders(): Promise <Order[]>{
       const result = await this.orderModel
       .find()

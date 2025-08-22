@@ -65,7 +65,7 @@ routerAdmin
 );
 routerAdmin
 .post(
-  '/orders/:id',
+  '/order/:id',
   // TODO: AUTH
   orderController.updateChosenOrder
 );
