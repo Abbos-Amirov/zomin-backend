@@ -6,9 +6,11 @@ import {
   Member,
   MemberInput,
   MemberUpdateInput,
+  UserInquiry,
 } from "../libs/types/member";
 import * as bcrypt from "bcryptjs";
 import { shapeIntoMongooseObjectId } from "../libs/config";
+import { T } from "../libs/types/common";
 
 class MemberService {
   private readonly memberModel;
@@ -22,7 +24,8 @@ class MemberService {
     const exist = await this.memberModel
       .findOne({ memberType: MemberType.RESTAURANT })
       .exec();
-    if (exist && input.memberType === MemberType.RESTAURANT) throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    if (exist && input.memberType === MemberType.RESTAURANT)
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
     const salt = await bcrypt.genSalt();
     input.memberPassword = await bcrypt.hash(input.memberPassword, salt);
 
@@ -63,9 +66,23 @@ class MemberService {
 
   /** ADMIN */
 
-  public async getUsers(): Promise<Member[]> {
+  public async getUsers(inquiry: UserInquiry): Promise<Member[]> {
+    const match: T = { memberType: MemberType.USER };
+
+    if (inquiry.status) match.memberStatus = inquiry.status;
+
+    if (inquiry.search) {
+      (match.memberNick = { $regex: new RegExp(inquiry.search, "i") }),
+        (match.memberPhone = { $regex: new RegExp(inquiry.search, "i") });
+    }
+
     const result = await this.memberModel
-      .find({ memberType: MemberType.USER })
+      .aggregate([
+        { $match: match },
+        { $sort: { createdAt: -1 } },
+        { $skip: (inquiry.page - 1) * inquiry.limit },
+        { $limit: inquiry.limit },
+      ])
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
