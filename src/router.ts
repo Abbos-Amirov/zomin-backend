@@ -6,7 +6,6 @@ import memberController from './controllers/member.controller';
 router.post('/signup', memberController.signup);
 router.post('/login', memberController.login);
 
-
 /** Table */
 
 

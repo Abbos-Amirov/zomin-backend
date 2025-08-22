@@ -10,7 +10,7 @@ const orderController: T = {};
 
 /** SPA */
 
-/** SSR */
+/** ADMIN */
 
 orderController.getAllOrders = async (req: Request, res: Response) => {
   try{
@@ -22,23 +22,6 @@ orderController.getAllOrders = async (req: Request, res: Response) => {
     console.log("Error, getAllOrders:", err);
     if(err instanceof Errors) res.status(err.code).json(err);
     else res.status(Errors.standard.code).json(Errors.standard);
-  }
-};
-
-orderController.createNewOrder = async (req: Request, res: Response) => {
-  try{
-    console.log("createNewOrder");
-    
-    const data: OrderInput = req.body;
-    console.log(data)
-    
-    const result = await orderService.createNewOrder(data);
-
-    res.send(`<script> alert("Successful creation")</script>`);
-  }catch(err){
-    console.log("Error, createNewProduct:", err);
-    const message = err instanceof Errors ? err.message : Message.SOMETHING_WENT_WRONG;
-    res.send(`<script> alert("${message}")</script>`);
   }
 };
 

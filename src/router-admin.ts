@@ -7,51 +7,38 @@ import orderController from "./controllers/order.controller";
 const routerAdmin = Router();
 
 
-
-// Admin
-routerAdmin.get('/', adminController.goHome);
-routerAdmin
-.get('/signup', adminController.getSignup)
-.post(
-  '/signup',
-  makeUploader("members").single("memberImage"), 
-  adminController.processSignup);
-routerAdmin
-.get('/login', adminController.getLogin)
-.post('/login', adminController.processLogin);
-routerAdmin.get('/logout', adminController.logout);
-
 // Products
 routerAdmin
 .get(
   '/product/all',
-  adminController.verifyRestaurant,
+  // TODO: AUTH
   productController.getAllProducts
 );
 routerAdmin
 .post(
   '/product/create',
-  adminController.verifyRestaurant,
+  // TODO: AUTH
   makeUploader("products").array("productImages", 5), 
   productController.createNewProduct
 );
 routerAdmin
 .post(
   '/product/:id',
-  adminController.verifyRestaurant,
+  // TODO: AUTH
   productController.updateChosenProduct
 );
+
 // User
 routerAdmin
 .get(
   '/user/all',
-  adminController.verifyRestaurant, 
+  // TODO: AUTH
   adminController.getUsers
 );
 routerAdmin
 .post(
   '/user/edit',
-  adminController.verifyRestaurant,
+  // TODO: AUTH
   adminController.updateChosenUser
 );
 
@@ -59,18 +46,18 @@ routerAdmin
 routerAdmin
 .get(
   '/table/all', 
-  adminController.verifyRestaurant, 
+  // TODO: AUTH
   tableController.getAllTables
 );
 routerAdmin
 .post(
   '/table/create', 
-  adminController.verifyRestaurant, 
+  // TODO: AUTH
   tableController.createNewTable
 )
 .post(
   '/table/:id', 
-  adminController.verifyRestaurant, 
+  // TODO: AUTH
   tableController.updateChosenTable
 );
 
@@ -78,18 +65,13 @@ routerAdmin
 routerAdmin
 .get(
   '/order/all',
-  adminController.verifyRestaurant,
+  // TODO: AUTH
   orderController.getAllOrders
 );
 routerAdmin
 .post(
-  '/order/create',
-  adminController.verifyRestaurant,
-  orderController.createNewOrder
-)
-.post(
   '/orders/:id',
-  adminController.verifyRestaurant,
+  // TODO: AUTH
   orderController.updateChosenOrder
 );
 

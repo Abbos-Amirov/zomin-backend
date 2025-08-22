@@ -22,17 +22,6 @@ class OrderService {
       return result;
   }
 
-  public async createNewOrder(input: OrderInput): Promise <Order>{
-    if(!input.memberId) input.orderType = OrderType.TABLE;
-    console.log(input)
-    try{
-        return await this.orderModel.create(input);
-    }catch(err){
-        console.log("Error, model: createNewOrder: ", err);
-        throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
-    }
-  };
-
   public async updateChosenOrder(
     id: string,
     input: OrderUpdateInput
