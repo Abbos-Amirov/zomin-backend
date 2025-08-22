@@ -8,7 +8,7 @@ const orderService = new OrderService();
 
 const orderController: T = {};
 
-/** SPA */
+/** MEMBER */
 
 /** ADMIN */
 
