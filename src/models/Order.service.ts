@@ -30,7 +30,7 @@ class OrderService {
     this.memberService = new MemberService();
   }
 
-  /** MEMBER */
+  /** MEMBER **/
   public async createOrder(
     client: Member | Table,
     input: OrderItemInput[]
