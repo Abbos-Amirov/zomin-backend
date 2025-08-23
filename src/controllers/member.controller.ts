@@ -5,7 +5,7 @@ import { Member } from "../libs/types/member";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import MemberService from "../models/Member.service";
 import AuthService from "../models/Auth.service";
-import { AUTH_TIMER } from "../libs/config";
+import { AUTH_TIMER_MEMBER } from "../libs/config";
 
 const memberService = new MemberService();
 const authService = new AuthService();
@@ -20,7 +20,7 @@ memberController.signup = async (req: Request, res: Response) => {
       token = await authService.createToken(result);
 
     res.cookie("accessToken", token, {
-      maxAge: AUTH_TIMER * 3600 * 1000,
+      maxAge: AUTH_TIMER_MEMBER * 3600 * 1000,
       httpOnly: false,
     });
 
@@ -40,7 +40,7 @@ memberController.login = async (req: Request, res: Response) => {
       token = await authService.createToken(result);
 
     res.cookie("accessToken", token, {
-      maxAge: AUTH_TIMER * 3600 * 1000,
+      maxAge: AUTH_TIMER_MEMBER * 3600 * 1000,
       httpOnly: false,
     });
 
@@ -101,10 +101,12 @@ memberController.verifyAuth = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.cookies["accessToken"];
-    if (token) req.member = await authService.checkAuth(token);
+    const memberToken = req.cookies["accessToken"];
+    const tableToken = req.cookies["tableToken"];
+    if (memberToken) req.member = await authService.checkAuth(memberToken);
+    if (tableToken) req.table = await authService.checkTableAuth(tableToken);
 
-    if (!req.member)
+    if (!memberToken && !tableToken)
       throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
 
     next();

@@ -4,7 +4,7 @@ import { Request, Response } from "express";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { TableInput, TableInquiry } from "../libs/types/table";
 import AuthService from "../models/Auth.service";
-import { AUTH_TIMER } from "../libs/config";
+import { AUTH_TIMER_TABLE } from "../libs/config";
 
 const tableService = new TableService();
 const authService = new AuthService();
@@ -38,9 +38,9 @@ tableController.createNewTable = async (req: Request, res: Response) => {
 
     const input: TableInput = req.body,
       result = await tableService.createNewTable(input),
-      token = await authService.createToken(result);
-    res.cookie("accessToken", token, {
-      maxAge: AUTH_TIMER * 3600 * 1000,
+      token = await authService.createTableToken(result);
+    res.cookie("tableToken", token, {
+      maxAge: AUTH_TIMER_TABLE * 3600 * 1000,
       httpOnly: false,
     });
 

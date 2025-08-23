@@ -11,14 +11,14 @@ const routerAdmin = Router();
 routerAdmin
 .post(
   '/product/create',
-  // TODO: AUTH
+  adminController.verifyAdmin,
   makeUploader("products").array("productImages", 5), 
   productController.createNewProduct
 );
 routerAdmin
 .post(
   '/product/:id',
-  // TODO: AUTH
+  adminController.verifyAdmin,
   makeUploader("products").array("productImages", 5), 
   productController.updateChosenProduct
 );
@@ -27,13 +27,13 @@ routerAdmin
 routerAdmin
 .get(
   '/user/all',
-  // TODO: AUTH
+  adminController.verifyAdmin,
   adminController.getUsers
 );
 routerAdmin
 .post(
   '/user/edit',
-  // TODO: AUTH
+  adminController.verifyAdmin,
   adminController.updateChosenUser
 );
 
@@ -41,18 +41,18 @@ routerAdmin
 routerAdmin
 .get(
   '/table/all', 
-  // TODO: AUTH
+  adminController.verifyAdmin,
   tableController.getAllTables
 );
 routerAdmin
 .post(
   '/table/create', 
-  // TODO: AUTH
+  adminController.verifyAdmin,
   tableController.createNewTable
 )
 .post(
   '/table/:id', 
-  // TODO: AUTH
+  adminController.verifyAdmin,
   tableController.updateChosenTable
 );
 
@@ -60,13 +60,13 @@ routerAdmin
 routerAdmin
 .get(
   '/order/all',
-  // TODO: AUTH
+  adminController.verifyAdmin,
   orderController.getAllOrders
 );
 routerAdmin
 .post(
   '/order/:id',
-  // TODO: AUTH
+  adminController.verifyAdmin,
   orderController.updateChosenOrder
 );
 

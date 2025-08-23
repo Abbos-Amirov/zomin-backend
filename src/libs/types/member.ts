@@ -2,6 +2,7 @@ import { ObjectId } from "mongoose";
 import { MemberType, MemberStatus } from "../enums/member.enum";
 import { Session } from "express-session";
 import { Request } from "express";
+import { Table } from "./table";
 
 export interface Member {
   _id: ObjectId;
@@ -47,6 +48,7 @@ export interface MemberUpdateInput {
 }
 
 export interface ExtendedRequest extends Request {
+  table: Table;
   member: Member;
   file: Express.Multer.File;
   files: Express.Multer.File[];

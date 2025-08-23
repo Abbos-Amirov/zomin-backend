@@ -1,26 +1,26 @@
 import { Member } from "../libs/types/member";
-import { AUTH_TIMER } from "../libs/config";
+import { AUTH_TIMER_MEMBER, AUTH_TIMER_TABLE } from "../libs/config";
 import jwt from "jsonwebtoken";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { Table } from "../libs/types/table";
 
 class AuthService {
   private readonly secretToken;
-  constructor(){
+  constructor() {
     this.secretToken = process.env.SECRET_TOKEN;
   }
-
-  public createToken(payload: any){
+  /** Member */
+  public createToken(payload: Member) {
     return new Promise((resolve, reject) => {
-      const duration = `${AUTH_TIMER}h`;
+      const duration = `${AUTH_TIMER_MEMBER}h`;
       jwt.sign(
-        payload, 
-        process.env.SECRET_TOKEN as string, 
+        payload,
+        process.env.SECRET_TOKEN as string,
         {
-          expiresIn: duration
+          expiresIn: duration,
         },
-        (err, token) =>{
-          if(err)
+        (err, token) => {
+          if (err)
             reject(
               new Errors(HttpCode.UNAUTHORIZED, Message.TOKEN_CREATION_FAILED)
             );
@@ -30,15 +30,41 @@ class AuthService {
     });
   }
 
-  public async checkAuth(token: string):Promise <any> {
-    const result: any = (await jwt.verify(
-      token, 
+  public async checkAuth(token: string): Promise<Member> {
+    const result: Member = (await jwt.verify(
+      token,
       this.secretToken as string
-    )) as any;
-    console.log("memberNick>>", result.memberNick);
+    )) as Member;
     return result;
   }
+  /** Table */
+  public createTableToken(payload: Table) {
+    return new Promise((resolve, reject) => {
+      const duration = `${AUTH_TIMER_TABLE}h`;
+      jwt.sign(
+        payload,
+        process.env.SECRET_TOKEN as string,
+        {
+          expiresIn: duration,
+        },
+        (err, token) => {
+          if (err)
+            reject(
+              new Errors(HttpCode.UNAUTHORIZED, Message.TOKEN_CREATION_FAILED)
+            );
+          else resolve(token as string);
+        }
+      );
+    });
+  }
 
+  public async checkTableAuth(token: string): Promise<Table> {
+    const result: Table = (await jwt.verify(
+      token,
+      this.secretToken as string
+    )) as Table;
+    return result;
+  }
 }
 
 export default AuthService;
