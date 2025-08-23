@@ -21,22 +21,23 @@ export enum Message {
   BLOCKED_USER = "You have been blocked, contact restaurant!",
   WRONG_PASSWORD = "Wrong password entered, please try again",
   NOT_AUTHENTICATED = "You are not authenticated, Please login first!",
+  NOT_TABLE = "No table found for this QR code",
 }
 
 class Errors extends Error {
-    public code: HttpCode;
-    public message: Message;
+  public code: HttpCode;
+  public message: Message;
 
-    static standard = {
-      code: HttpCode.INTERNAL_SERVER_ERROR,
-      message: Message.SOMETHING_WENT_WRONG,
-    };
+  static standard = {
+    code: HttpCode.INTERNAL_SERVER_ERROR,
+    message: Message.SOMETHING_WENT_WRONG,
+  };
 
-    constructor(statusCode: HttpCode, statusMessage: Message){
-        super();
-        this.code = statusCode;
-        this.message = statusMessage;
-    }
+  constructor(statusCode: HttpCode, statusMessage: Message) {
+    super();
+    this.code = statusCode;
+    this.message = statusMessage;
+  }
 }
 
 export default Errors;

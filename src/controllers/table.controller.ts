@@ -11,6 +11,8 @@ const authService = new AuthService();
 
 const tableController: T = {};
 
+/** Admin */
+
 tableController.getAllTables = async (req: Request, res: Response) => {
   try {
     console.log("getAllTables");
@@ -37,14 +39,9 @@ tableController.createNewTable = async (req: Request, res: Response) => {
     console.log("createNewTable");
 
     const input: TableInput = req.body,
-      result = await tableService.createNewTable(input),
-      token = await authService.createTableToken(result);
-    res.cookie("tableToken", token, {
-      maxAge: AUTH_TIMER_TABLE * 3600 * 1000,
-      httpOnly: false,
-    });
+      result = await tableService.createNewTable(input);
 
-    res.status(HttpCode.CREATED).json({ table: result, accessToken: token });
+    res.status(HttpCode.CREATED).json(result);
   } catch (err) {
     console.log("Error, createNewTable:", err);
     const message =
@@ -68,4 +65,24 @@ tableController.updateChosenTable = async (req: Request, res: Response) => {
   }
 };
 
+/** Clients */
+tableController.qrLanding = async (req: Request, res: Response) => {
+  try {
+    console.log("qrLanding");
+    const qrToken = req.params.id;
+
+    const result = await tableService.qrLanding(qrToken),
+      token = await authService.createTableToken(result);
+    res.cookie("tableToken", token, {
+      maxAge: AUTH_TIMER_TABLE * 3600 * 1000,
+      httpOnly: false,
+    });
+
+    res.status(HttpCode.OK).json({ result: result, tableToken: token });
+  } catch (err) {
+    console.log("Error, qrLanding:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
 export default tableController;

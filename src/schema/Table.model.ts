@@ -27,6 +27,11 @@ const tableSchema = new Schema(
       enum: TableCall,
       default: TableCall.PAUSE,
     },
+
+    activeIdentifier: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );

@@ -1,9 +1,10 @@
 import { Router } from "express";
 const router = Router();
-import memberController from './controllers/member.controller';
+import memberController from "./controllers/member.controller";
 import productController from "./controllers/product.controller";
 import makeUploader from "./libs/utils/uploader";
 import orderController from "./controllers/order.controller";
+import tableController from "./controllers/table.controller";
 
 /** MEMBER */
 router.post("/member/login", memberController.login);
@@ -46,5 +47,7 @@ router.post(
   orderController.updateOrder
 );
 
+/** Table */
+router.get("/table/qr/:id", tableController.qrLanding);
 
 export default router;
