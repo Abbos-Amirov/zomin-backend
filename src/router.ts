@@ -20,8 +20,14 @@ router.post(
   makeUploader("members").single("memberImage"),
   memberController.updateMember
 );
+
 /** Product */
 router.get("/product/all", productController.getProducts);
+router.get(
+  "/product/:id",
+  memberController.retrieveAuth,
+  productController.getProduct
+);
 
 /** Order */
 router.post(
