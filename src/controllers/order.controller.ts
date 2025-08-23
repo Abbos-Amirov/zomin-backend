@@ -5,7 +5,8 @@ import { Request, Response } from "express";
 import { OrderInquiry, OrderUpdateInput } from "../libs/types/order";
 import { OrderStatus, OrderType } from "../libs/enums/order.enum";
 import { PaymentMethod } from "../libs/enums/order.enum";
-import { ExtendedRequest } from "../libs/types/member";
+import { ExtendedRequest, Member } from "../libs/types/member";
+import { Table } from "../libs/types/table";
 
 const orderService = new OrderService();
 
@@ -15,8 +16,8 @@ const orderController: T = {};
 orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
   try {
     console.log("createOrder");
-
-    const result = await orderService.createOrder(req.member, req.body);
+    const client: Member | Table = req.member?  req.member : req.table;
+    const result = await orderService.createOrder(client, req.body);
 
     res.status(HttpCode.CREATED).json({ result });
   } catch (err) {

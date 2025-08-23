@@ -16,6 +16,8 @@ import { OrderStatus, OrderType } from "../libs/enums/order.enum";
 import { T } from "../libs/types/common";
 import { MemberStatus } from "../libs/enums/member.enum";
 import { MemberType } from "../libs/enums/member.enum";
+import { Table } from "../libs/types/table";
+import { isMember, isTable } from "../libs/utils/validators";
 
 class OrderService {
   private readonly orderModel;
@@ -30,28 +32,36 @@ class OrderService {
 
   /** MEMBER */
   public async createOrder(
-    member: Member,
+    client: Member | Table,
     input: OrderItemInput[]
   ): Promise<Order> {
-    const memberId = shapeIntoMongooseObjectId(member._id);
+    const memberId = shapeIntoMongooseObjectId(client._id);
     const amount = input.reduce((accumulator: number, item: OrderItemInput) => {
       return accumulator + item.itemPrice * item.itemQuantity;
     }, 0);
-    const delivery = amount < 100 ? 5 : 0;
+
+    let orderType: OrderType;
+    if (isMember(client)) {
+      orderType =
+        client.memberType === MemberType.USER
+          ? OrderType.DELIVERY
+          : OrderType.TAKEOUT; // restaurant
+    } else if (isTable(client)) {
+      orderType = OrderType.TABLE;
+    } else {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.NO_MEMBER_NICK);
+    }
+
+    const deliveryFee =
+      orderType === OrderType.DELIVERY ? (amount < 100 ? 5 : 0) : 0;
 
     const order: OrderInput = {
-      orderTotal: amount + delivery,
-      deliveryFee: delivery,
-      orderType:
-        member.memberType === MemberType.USER
-          ? OrderType.DELIVERY
-          : member.memberType === MemberType.RESTAURANT
-          ? OrderType.TAKEOUT
-          : OrderType.TABLE,
-      memberId: member.memberNick ? memberId : null,
-      tableId: !member.memberNick ? memberId : null,
+      orderTotal: amount + deliveryFee,
+      deliveryFee,
+      orderType,
+      memberId: isMember(client) ? shapeIntoMongooseObjectId(client._id) : null,
+      tableId: isTable(client) ? shapeIntoMongooseObjectId(client._id) : null,
     };
-
     try {
       const newOrder: Order = await this.orderModel.create(order);
       const orderId = newOrder._id;
