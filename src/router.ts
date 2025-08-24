@@ -17,7 +17,7 @@ router.get(
 );
 router.post(
   "/member/update",
-  memberController.verifyAuth,
+  memberController.verifyMember,
   makeUploader("members").single("memberImage"),
   memberController.updateMember
 );
