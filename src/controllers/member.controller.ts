@@ -112,8 +112,8 @@ memberController.verifyAuth = async (
     const tableToken = req.cookies["tableToken"];
     if (memberToken) req.member = await authService.checkAuth(memberToken);
     if (tableToken) req.table = await authService.checkTableAuth(tableToken);
-    const activeIdentifier = await tableService.verifyActivite(req.table.activeIdentifier);
-    if (!memberToken && !activeIdentifier)
+    const table = await tableService.verifyActivite(req.table?.activeIdentifier);
+    if (!memberToken && !table)
       throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
     next();
   } catch (err) {

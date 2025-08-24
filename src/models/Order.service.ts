@@ -192,11 +192,15 @@ class OrderService {
     input: OrderUpdateInput
   ): Promise<Order> {
     console.log(id);
-    id = shapeIntoMongooseObjectId(id);
+    const orderId = shapeIntoMongooseObjectId(id);
     const result = await this.orderModel
       .findByIdAndUpdate({ _id: id }, input, { new: true })
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
+    if(result.orderStatus !== OrderStatus.PENDING)
+      await this.notifService.updateOrderNotif(orderId, {
+      notifStatus: NotifStatus.READ
+      });
     return result;
   }
 }

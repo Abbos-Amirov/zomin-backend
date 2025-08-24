@@ -14,10 +14,15 @@ export interface OrderItem{
 
 export interface Order{
   _id: ObjectId;
-  orderTotal: number;
-  orderDelivery: number;
+  orderType: OrderType;
   orderStatus: OrderStatus;
-  memberId: ObjectId;
+  orderTotal: number;
+  deliveryFee: number;
+  tableId: ObjectId | null;
+  memberId: ObjectId | null;
+  orderNote: string;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
   createdAt: Date;
   updatedAt: Date;
   /** from aggregations */
@@ -34,8 +39,10 @@ export interface OrderItemInput {
 
 
 export interface OrderUpdateInput{
-  orderId: string;
-  orderStatus: OrderStatus;
+  orderId: ObjectId;
+  orderStatus?: OrderStatus;
+  paymentStatus?: PaymentStatus;
+  paymentMethod?: PaymentMethod;
 }
 
 export interface OrderInquiry {

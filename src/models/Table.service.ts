@@ -13,7 +13,7 @@ import { MemberType } from "../libs/enums/member.enum";
 import { TableStatus } from "../libs/enums/table.enum";
 import { TableCall } from "../libs/enums/tableCall.enum";
 import NotifService from "./Notif.service";
-import { NotifType } from "../libs/enums/notif.enum";
+import { NotifStatus, NotifType } from "../libs/enums/notif.enum";
 import { MessageNotif, Title } from "../libs/notif";
 
 class TableService {
@@ -61,11 +61,15 @@ class TableService {
     id: string,
     input: TableUpdateInput
   ): Promise<Table> {
-    id = shapeIntoMongooseObjectId(id);
+    const tableId = shapeIntoMongooseObjectId(id);
     if (input.tableStatus)
       // every new clients new activeIdentifier
       input.activeIdentifier = null;
-    console.log("input", input);
+    if (input.tableCall)
+      await this.notifService.updateCallNotif(tableId, {
+        message: MessageNotif.TABLE_CALL_UPDATE, notifStatus: NotifStatus.READ
+      });
+    console.log("input: updateChosenTable:", input);
     const result = await this.tableModel
       .findByIdAndUpdate({ _id: id }, input, { new: true })
       .exec();
@@ -107,7 +111,7 @@ class TableService {
         tableId: id,
         orderId: null,
         title: Title.TABLE_CALL + `${result.tableNumber}`,
-        message: MessageNotif.TABLE_CALL
+        message: MessageNotif.TABLE_CALL,
       });
     } else {
       throw new Errors(HttpCode.NOT_FOUND, Message.NOT_TABLE);

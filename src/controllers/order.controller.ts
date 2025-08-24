@@ -88,7 +88,7 @@ orderController.updateChosenOrder = async (req: Request, res: Response) => {
   try {
     console.log("updateChosenOrder");
     const id = req.params.id;
-
+console.log("id", id)
     const result = await orderService.updateChosenOrder(id, req.body);
 
     res.status(HttpCode.OK).json(result);

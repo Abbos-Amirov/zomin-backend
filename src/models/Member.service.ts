@@ -63,7 +63,6 @@ class MemberService {
 
     return await this.memberModel.findById(member._id).lean().exec();
   }
-    //TODO: This is for table and member
     public async getMemberDetail(member: Member): Promise<Member> {
     const memberId = shapeIntoMongooseObjectId(member._id);
     const match: T = {id: memberId};

@@ -21,3 +21,13 @@ export interface NotifInput{
   title: string;
   message: string;
 }
+
+export interface NotifUpdate{
+  notifType?: string;
+  notifStatus?: NotifStatus;
+  orderId?: ObjectId | null;
+  tableId?: ObjectId | null;
+  title?: string;
+  message?: string;
+}
+

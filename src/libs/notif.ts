@@ -7,6 +7,7 @@ export enum Title {
 export enum MessageNotif{
   USER_ORDER="Items:",
   TABLE_ORDER="Items: ",
-  TABLE_CALL="Table pressed the service button"
+  TABLE_CALL="Table pressed the service button",
+  TABLE_CALL_UPDATE="Staff acknowledged the call request"
 }
 
