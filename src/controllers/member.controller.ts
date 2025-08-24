@@ -11,8 +11,9 @@ import Errors, { HttpCode, Message } from "../libs/Errors";
 import MemberService from "../models/Member.service";
 import AuthService from "../models/Auth.service";
 import { AUTH_TIMER_MEMBER } from "../libs/config";
-import TableModel from "../schema/Table.model";
+import TableService from "../models/Table.service";
 
+const tableService = new TableService();
 const memberService = new MemberService();
 const authService = new AuthService();
 
@@ -111,9 +112,7 @@ memberController.verifyAuth = async (
     const tableToken = req.cookies["tableToken"];
     if (memberToken) req.member = await authService.checkAuth(memberToken);
     if (tableToken) req.table = await authService.checkTableAuth(tableToken);
-    const activeIdentifier: any = await TableModel.findOne({
-      activeIdentifier: req.table.activeIdentifier,
-    }).exec();
+    const activeIdentifier = await tableService.verifyActivite(req.table.activeIdentifier);
     if (!memberToken && !activeIdentifier)
       throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
     next();

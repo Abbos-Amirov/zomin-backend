@@ -1,15 +1,37 @@
 import TableService from "../models/Table.service";
 import { T } from "../libs/types/common";
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { TableInput, TableInquiry } from "../libs/types/table";
 import AuthService from "../models/Auth.service";
 import { AUTH_TIMER_TABLE } from "../libs/config";
+import { ExtendedRequest } from "../libs/types/member";
 
 const tableService = new TableService();
 const authService = new AuthService();
 
 const tableController: T = {};
+
+tableController.verifyTable = async (
+  req: ExtendedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const tableToken = req.cookies["tableToken"];
+    if (tableToken) req.table = await authService.checkTableAuth(tableToken);
+    const activeIdentifier = await tableService.verifyActivite(
+      req.table.activeIdentifier
+    );
+    if (!activeIdentifier)
+      throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
+    next();
+  } catch (err) {
+    console.log("Error, verifyTable:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
 
 /** Admin */
 
@@ -85,4 +107,18 @@ tableController.qrLanding = async (req: Request, res: Response) => {
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
+
+tableController.clickTableCall = async (req: Request, res: Response) => {
+  try {
+    const tableId = req.params.id;
+    const result = await tableService.clickTableCall(tableId);
+
+    res.status(HttpCode.OK).json(result);
+  } catch (err) {
+    console.log("Error, clickTableCall:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 export default tableController;

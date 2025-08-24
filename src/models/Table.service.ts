@@ -1,3 +1,4 @@
+import { ObjectId } from "mongoose";
 import { T } from "../libs/types/common";
 import { shapeIntoMongooseObjectId } from "../libs/config";
 import Errors, { HttpCode, Message } from "../libs/Errors";
@@ -10,12 +11,18 @@ import {
 import TableModel from "../schema/Table.model";
 import { MemberType } from "../libs/enums/member.enum";
 import { TableStatus } from "../libs/enums/table.enum";
+import { TableCall } from "../libs/enums/tableCall.enum";
+import NotifService from "./Notif.service";
+import { NotifType } from "../libs/enums/notif.enum";
+import { MessageNotif, Title } from "../libs/notif";
 
 class TableService {
   private readonly tableModel;
+  private readonly notifService;
 
   constructor() {
     this.tableModel = TableModel;
+    this.notifService = new NotifService();
   }
 
   public async getAllTables(inquiry: TableInquiry): Promise<Table[]> {
@@ -58,7 +65,7 @@ class TableService {
     if (input.tableStatus)
       // every new clients new activeIdentifier
       input.activeIdentifier = null;
-      console.log("input", input)
+    console.log("input", input);
     const result = await this.tableModel
       .findByIdAndUpdate({ _id: id }, input, { new: true })
       .exec();
@@ -68,7 +75,7 @@ class TableService {
 
   public async qrLanding(qrToken: string): Promise<Table> {
     const activeIdentifier = Math.random().toString(36).substring(2, 10);
-    const result = this.tableModel
+    const result = await this.tableModel
       .findOneAndUpdate(
         { qrToken: qrToken },
         {
@@ -80,6 +87,38 @@ class TableService {
       .lean()
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NOT_TABLE);
+    return result;
+  }
+
+  public async clickTableCall(tableId: string): Promise<Table> {
+    const id = shapeIntoMongooseObjectId(tableId);
+    const result = await this.tableModel
+      .findByIdAndUpdate(
+        id,
+        {
+          tableCall: TableCall.ACTIVE,
+        },
+        { new: true }
+      )
+      .exec();
+    if (result) {
+      await this.notifService.createNotif({
+        notifType: NotifType.CALL,
+        tableId: id,
+        orderId: null,
+        title: Title.TABLE_CALL + `${result.tableNumber}`,
+        message: MessageNotif.TABLE_CALL
+      });
+    } else {
+      throw new Errors(HttpCode.NOT_FOUND, Message.NOT_TABLE);
+    }
+    return result;
+  }
+
+  public async verifyActivite(activeIdentifier: string): Promise<Table> {
+    const result = this.tableModel
+      .findOne({ activeIdentifier: activeIdentifier })
+      .exec();
     return result;
   }
 }
