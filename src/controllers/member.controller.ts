@@ -1,4 +1,9 @@
-import { ExtendedRequest, LoginInput, MemberInput, MemberUpdateInput } from "../libs/types/member";
+import {
+  ExtendedRequest,
+  LoginInput,
+  MemberInput,
+  MemberUpdateInput,
+} from "../libs/types/member";
 import { T } from "../libs/types/common";
 import { NextFunction, Request, Response } from "express";
 import { Member } from "../libs/types/member";
@@ -6,6 +11,7 @@ import Errors, { HttpCode, Message } from "../libs/Errors";
 import MemberService from "../models/Member.service";
 import AuthService from "../models/Auth.service";
 import { AUTH_TIMER_MEMBER } from "../libs/config";
+import TableModel from "../schema/Table.model";
 
 const memberService = new MemberService();
 const authService = new AuthService();
@@ -105,10 +111,11 @@ memberController.verifyAuth = async (
     const tableToken = req.cookies["tableToken"];
     if (memberToken) req.member = await authService.checkAuth(memberToken);
     if (tableToken) req.table = await authService.checkTableAuth(tableToken);
-
-    if (!memberToken && !tableToken)
+    const activeIdentifier: any = await TableModel.findOne({
+      activeIdentifier: req.table.activeIdentifier,
+    }).exec();
+    if (!memberToken && !activeIdentifier)
       throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
-
     next();
   } catch (err) {
     console.log("Error, verifyAuth:", err);
@@ -123,9 +130,10 @@ memberController.retrieveAuth = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.cookies["accessToken"];
-    if (token) req.member = await authService.checkAuth(token);
-
+    const memberToken = req.cookies["accessToken"];
+    const tableToken = req.cookies["tableToken"];
+    if (memberToken) req.member = await authService.checkAuth(memberToken);
+    if (tableToken) req.table = await authService.checkTableAuth(tableToken);
     next();
   } catch (err) {
     console.log("Error, retrieveAuth:", err);
