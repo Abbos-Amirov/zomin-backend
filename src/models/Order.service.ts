@@ -18,16 +18,22 @@ import { MemberStatus } from "../libs/enums/member.enum";
 import { MemberType } from "../libs/enums/member.enum";
 import { Table } from "../libs/types/table";
 import { isMember, isTable } from "../libs/utils/validators";
+import NotifService from "./Notif.service";
+import { Notif, NotifInput } from "../libs/types/notif";
+import { NotifStatus, NotifType } from "../libs/enums/notif.enum";
+import { MessageNotif, Title } from "../libs/notif";
 
 class OrderService {
   private readonly orderModel;
   private readonly orderItemModel;
   private readonly memberService;
+  private readonly notifService;
 
   constructor() {
     this.orderModel = OrderModel;
     this.orderItemModel = OrderItemModel;
     this.memberService = new MemberService();
+    this.notifService = new NotifService();
   }
 
   /** MEMBER **/
@@ -47,6 +53,7 @@ class OrderService {
           ? OrderType.DELIVERY
           : OrderType.TAKEOUT; // restaurant
     } else if (isTable(client)) {
+      console.log("alajdsf", client.activeIdentifier)
       orderType = OrderType.TABLE;
     } else {
       throw new Errors(HttpCode.BAD_REQUEST, Message.NO_MEMBER_NICK);
@@ -65,8 +72,18 @@ class OrderService {
     try {
       const newOrder: Order = await this.orderModel.create(order);
       const orderId = newOrder._id;
-      console.log("orderId:", orderId);
       await this.recordOrderItem(orderId, input);
+      /** Create Order Notification */
+      await this.notifService.createNotif({
+        notifType: NotifType.ORDER,
+        orderId: isMember(client) ? orderId : null,
+        tableId: isTable(client) ? orderId : null,
+        title: isMember(client)
+          ? Title.USER_ORDER + `${client.memberNick}`
+          : Title.TABLE_ORDER + `${client.tableNumber}`,
+        message: MessageNotif.USER_ORDER
+      });
+
       return newOrder;
     } catch (err) {
       console.log("Error, model: createOrder: ", err);
@@ -84,7 +101,6 @@ class OrderService {
       await this.orderItemModel.create(item);
       return "INSERTED";
     });
-
     const orderItemsState = await Promise.all(promisedList);
     console.log("orderItemsState", orderItemsState);
   }

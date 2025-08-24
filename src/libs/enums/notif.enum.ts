@@ -6,4 +6,5 @@ export enum NotifType {
 export enum NotifStatus {
   PENDING = "PENIDNG",
   READ = "READ",
+  DELETE = "DELETE",
 }
