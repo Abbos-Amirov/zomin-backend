@@ -7,6 +7,7 @@ import {
   OrderInput,
   OrderInquiry,
   OrderItemInput,
+  OrderStatis,
   OrderUpdateInput,
 } from "../libs/types/order";
 import { shapeIntoMongooseObjectId } from "../libs/config";
@@ -14,12 +15,10 @@ import Errors, { HttpCode, Message } from "../libs/Errors";
 import MemberService from "./Member.service";
 import { OrderStatus, OrderType } from "../libs/enums/order.enum";
 import { T } from "../libs/types/common";
-import { MemberStatus } from "../libs/enums/member.enum";
 import { MemberType } from "../libs/enums/member.enum";
 import { Table } from "../libs/types/table";
 import { isMember, isTable } from "../libs/utils/validators";
 import NotifService from "./Notif.service";
-import { Notif, NotifInput } from "../libs/types/notif";
 import { NotifStatus, NotifType } from "../libs/enums/notif.enum";
 import { MessageNotif, Title } from "../libs/notif";
 
@@ -53,7 +52,7 @@ class OrderService {
           ? OrderType.DELIVERY
           : OrderType.TAKEOUT; // restaurant
     } else if (isTable(client)) {
-      console.log("alajdsf", client.activeIdentifier)
+      console.log("alajdsf", client.activeIdentifier);
       orderType = OrderType.TABLE;
     } else {
       throw new Errors(HttpCode.BAD_REQUEST, Message.NO_MEMBER_NICK);
@@ -81,7 +80,7 @@ class OrderService {
         title: isMember(client)
           ? Title.USER_ORDER + `${client.memberNick}`
           : Title.TABLE_ORDER + `${client.tableNumber}`,
-        message: MessageNotif.USER_ORDER
+        message: MessageNotif.USER_ORDER,
       });
 
       return newOrder;
@@ -197,11 +196,164 @@ class OrderService {
       .findByIdAndUpdate({ _id: id }, input, { new: true })
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
-    if(result.orderStatus !== OrderStatus.PENDING)
+    if (result.orderStatus !== OrderStatus.PENDING)
       await this.notifService.updateOrderNotif(orderId, {
-      notifStatus: NotifStatus.READ
+        notifStatus: NotifStatus.READ,
       });
     return result;
+  }
+
+  public async getStatis(): Promise<OrderStatis> {
+    // Order Status
+    const allOrders = await this.orderModel.find().exec();
+    const pendingOrder = allOrders.filter((val) => {
+      return val.orderStatus === OrderStatus.PENDING;
+    }).length;
+    const complatedOrder = allOrders.filter((val) => {
+      return val.orderStatus === OrderStatus.COMPLETED;
+    }).length;
+
+    // Orders By Category
+    const ordersByCategory = await this.orderItemModel.aggregate([
+      {
+        $lookup: {
+          from: "orders",
+          localField: "orderId",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.paymentStatus": "PAID",
+          "order.orderStatus": { $ne: "CANCELED" },
+          // "order.createdAt": { $gte: ISODate("2025-08-01"), $lt: ISODate("2025-09-01") }
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "productId",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: "$product" },
+      {
+        $group: {
+          _id: "$product.productCollection",
+          totalQuantity: { $sum: "$itemQuantity" },
+          revenue: { $sum: { $multiply: ["$itemQuantity", "$itemPrice"] } },
+          orderIds: { $addToSet: "$orderId" },
+        },
+      },
+      { $addFields: { orders: { $size: "$orderIds" } } },
+      { $project: { orderIds: 0 } },
+      { $sort: { revenue: -1 } },
+    ]);
+
+    // Top selling Items
+    const topSellingItems = await this.orderItemModel.aggregate([
+      {
+        $lookup: {
+          from: "orders",
+          localField: "orderId",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.paymentStatus": "PAID",
+          "order.orderStatus": { $ne: "CANCELED" },
+          // "order.createdAt": { $gte: ISODate("2025-08-01"), $lt: ISODate("2025-09-01") }
+        },
+      },
+      {
+        $group: {
+          _id: "$productId",
+          totalQuantity: { $sum: "$itemQuantity" },
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: "$product" },
+      {
+        $project: {
+          _id: 0,
+          productId: "$_id",
+          productName: "$product.productName",
+          totalQuantity: 1,
+        },
+      },
+      { $sort: { totalQuantity: -1 } },
+      { $limit: 6 },
+    ]);
+
+    // Today's Income and Avarege Order Value
+    const todayIncomeAndAOV = await this.orderModel.aggregate([
+      {
+        $match: {
+          paymentStatus: "PAID",
+          orderStatus: { $ne: "CANCELED" },
+          $expr: {
+            $and: [
+              {
+                $gte: [
+                  "$createdAt",
+                  {
+                    $dateSubtract: {
+                      startDate: "$$NOW",
+                      unit: "day",
+                      amount: 1,
+                      timezone: "Asia/Seoul",
+                    },
+                  },
+                ],
+              },
+              { $lte: ["$createdAt", "$$NOW"] },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          orders: { $sum: 1 },
+          totalSum: { $sum: "$orderTotal" },
+          deliverySum: { $sum: "$deliveryFee" },
+        },
+      },
+      {
+        $addFields: {
+          aovGross: {
+            $cond: [
+              { $gt: ["$orders", 0] },
+              { $divide: ["$totalSum", "$orders"] },
+              0,
+            ],
+          },
+        },
+      },
+      { $project: { _id: 0 } },
+    ]);
+    const data: OrderStatis = {
+      totalOrder: allOrders.length,
+      pendingOrder: pendingOrder,
+      complatedOrder: complatedOrder,
+      ordersByCategory: ordersByCategory,
+      topSellingItems: topSellingItems,
+      todayIncomeAndAOV: todayIncomeAndAOV,
+    };
+    return data;
   }
 }
 

@@ -6,68 +6,65 @@ import tableController from "./controllers/table.controller";
 import orderController from "./controllers/order.controller";
 const routerAdmin = Router();
 
-
 // Products
-routerAdmin
-.post(
-  '/product/create',
+routerAdmin.post(
+  "/product/create",
   adminController.verifyAdmin,
-  makeUploader("products").array("productImages", 5), 
+  makeUploader("products").array("productImages", 5),
   productController.createNewProduct
 );
-routerAdmin
-.post(
-  '/product/:id',
+routerAdmin.post(
+  "/product/:id",
   adminController.verifyAdmin,
-  makeUploader("products").array("productImages", 5), 
+  makeUploader("products").array("productImages", 5),
   productController.updateChosenProduct
 );
 
 // User
-routerAdmin
-.get(
-  '/user/all',
+routerAdmin.get(
+  "/user/all",
   adminController.verifyAdmin,
   adminController.getUsers
 );
-routerAdmin
-.post(
-  '/user/edit',
+routerAdmin.post(
+  "/user/edit",
   adminController.verifyAdmin,
   adminController.updateChosenUser
 );
 
 // Table
-routerAdmin
-.get(
-  '/table/all', 
+routerAdmin.get(
+  "/table/all",
   adminController.verifyAdmin,
   tableController.getAllTables
 );
 routerAdmin
-.post(
-  '/table/create', 
-  adminController.verifyAdmin,
-  tableController.createNewTable
-)
-.post(
-  '/table/:id', 
-  adminController.verifyAdmin,
-  tableController.updateChosenTable
-);
+  .post(
+    "/table/create",
+    adminController.verifyAdmin,
+    tableController.createNewTable
+  )
+  .post(
+    "/table/:id",
+    adminController.verifyAdmin,
+    tableController.updateChosenTable
+  );
 
 // Orders
-routerAdmin
-.get(
-  '/order/all',
+routerAdmin.get(
+  "/order/all",
   adminController.verifyAdmin,
   orderController.getAllOrders
 );
-routerAdmin
-.post(
-  '/order/:id',
+routerAdmin.post(
+  "/order/:id",
   adminController.verifyAdmin,
   orderController.updateChosenOrder
+);
+routerAdmin.get(
+  "/order/statis",
+  adminController.verifyAdmin,
+  orderController.getOrderStatis
 );
 
 // Dashboard

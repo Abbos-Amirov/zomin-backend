@@ -2,7 +2,7 @@ import OrderService from "../models/Order.service";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { T } from "../libs/types/common";
 import { Request, Response } from "express";
-import { OrderInquiry, OrderUpdateInput } from "../libs/types/order";
+import { OrderInquiry, OrderStatis, OrderUpdateInput } from "../libs/types/order";
 import { OrderStatus, OrderType } from "../libs/enums/order.enum";
 import { PaymentMethod } from "../libs/enums/order.enum";
 import { ExtendedRequest, Member } from "../libs/types/member";
@@ -94,6 +94,19 @@ console.log("id", id)
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, updateChosenOrder:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+orderController.getOrderStatis = async (req: Request, res: Response) => {
+  try {
+    console.log("getOrderStatis");
+    const result: OrderStatis = await orderService.getStatis();
+
+    res.status(HttpCode.OK).json(result);
+  } catch (err) {
+    console.log("Error, getOrderStatis:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
     else res.status(Errors.standard.code).json(Errors.standard);
   }
