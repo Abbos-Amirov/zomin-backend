@@ -52,6 +52,7 @@ class ProductService {
 
   public async getProduct(
     memberId: ObjectId | null,
+    activeIdentifier: string | null,
     id: string
   ): Promise<Product> {
     const productId = shapeIntoMongooseObjectId(id);
@@ -63,11 +64,11 @@ class ProductService {
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
-    // TODO: view log creation
-    if (memberId) {
-      // Check Existence
+    if (memberId || activeIdentifier) {
+      // Check Existence Table&Member
       const input: ViewInput = {
         memberId: memberId,
+        activeIdentifier: activeIdentifier,
         viewRefId: productId,
         viewGroup: ViewGroup.PRODUCT,
       };

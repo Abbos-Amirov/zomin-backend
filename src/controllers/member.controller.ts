@@ -6,7 +6,6 @@ import {
 } from "../libs/types/member";
 import { T } from "../libs/types/common";
 import { NextFunction, Request, Response } from "express";
-import { Member } from "../libs/types/member";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import MemberService from "../models/Member.service";
 import AuthService from "../models/Auth.service";

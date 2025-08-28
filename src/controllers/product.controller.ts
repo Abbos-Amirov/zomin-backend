@@ -1,4 +1,8 @@
-import { ProductInput, ProductInquiry, ProductUpdateInput } from "../libs/types/product";
+import {
+  ProductInput,
+  ProductInquiry,
+  ProductUpdateInput,
+} from "../libs/types/product";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { T } from "../libs/types/common";
 import ProductService from "../models/Product.service";
@@ -15,7 +19,7 @@ productController.getProducts = async (req: Request, res: Response) => {
   try {
     console.log("getProducts");
     const { page, limit, order, productCollection, search } = req.query;
-    console.log(req.query)
+    console.log(req.query);
     const inquiry: ProductInquiry = {
       order: String(order),
       page: Number(page),
@@ -39,8 +43,9 @@ productController.getProduct = async (req: ExtendedRequest, res: Response) => {
   try {
     console.log("getProduct");
     const { id } = req.params;
-    const memberId = req.member?._id ?? null,
-      result = await productService.getProduct(memberId, id);
+    const memberId = req.member?._id ?? null;
+    const activeIdentifier = req.table?.activeIdentifier ?? null,
+      result = await productService.getProduct(memberId, activeIdentifier, id);
 
     res.status(HttpCode.OK).json({ result: result });
   } catch (err) {

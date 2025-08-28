@@ -11,7 +11,8 @@ export interface View {
 }
 
 export interface ViewInput {
-  memberId: ObjectId;
+  memberId: ObjectId | null;
+  activeIdentifier: string | null;
   viewGroup: ViewGroup;
   viewRefId: ObjectId;
 }
