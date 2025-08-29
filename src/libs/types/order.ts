@@ -1,11 +1,16 @@
-import {ObjectId} from "mongoose";
-import { OrderStatus, OrderType, PaymentMethod, PaymentStatus } from "../enums/order.enum";
+import { ObjectId } from "mongoose";
+import {
+  OrderStatus,
+  OrderType,
+  PaymentMethod,
+  PaymentStatus,
+} from "../enums/order.enum";
 import { Product } from "./product";
 import { ProductCollection } from "../enums/product.enums";
 
-export interface OrderItem{
+export interface OrderItem {
   _id: ObjectId;
-  itemQuantity:number;
+  itemQuantity: number;
   itemPrice: number;
   orderId: ObjectId;
   productId: ObjectId;
@@ -13,7 +18,7 @@ export interface OrderItem{
   updatedAt: Date;
 }
 
-export interface Order{
+export interface Order {
   _id: ObjectId;
   orderType: OrderType;
   orderStatus: OrderStatus;
@@ -38,8 +43,7 @@ export interface OrderItemInput {
   orderId?: ObjectId;
 }
 
-
-export interface OrderUpdateInput{
+export interface OrderUpdateInput {
   orderId: ObjectId;
   orderStatus?: OrderStatus;
   paymentStatus?: PaymentStatus;
@@ -56,7 +60,7 @@ export interface OrderInquiry {
   orderStatus?: OrderStatus;
 }
 
-export interface OrderInput{
+export interface OrderInput {
   orderType: OrderType;
   orderStatus?: OrderStatus;
   orderTotal: number;
@@ -68,11 +72,30 @@ export interface OrderInput{
   paymentMethod?: PaymentMethod;
 }
 
-export interface OrderStatis{
+export interface OrderStatis {
   totalOrder: number;
   pendingOrder: number;
   complatedOrder: number;
-  ordersByCategory: object;
-  topSellingItems: object;
-  todayIncomeAndAOV: object;
+  ordersByCategory: OrdersByCategory[];
+  topSellingItems: TopSellingItems[];
+  todayIncomeAndAOV: TodayIncomeAndAOV[];
+}
+
+export interface OrdersByCategory {
+  collection: string;
+  totalQuantity: number;
+  revenue: number;
+  orders: number;
+}
+
+export interface TopSellingItems{
+  productId: string;
+  productName: string;
+  totalQuantity:number;
+}
+
+export interface TodayIncomeAndAOV {
+  totalSum: number;
+  deliverySum: number;
+  aovGross: number;
 }

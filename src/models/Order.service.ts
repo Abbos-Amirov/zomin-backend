@@ -7,8 +7,11 @@ import {
   OrderInput,
   OrderInquiry,
   OrderItemInput,
+  OrdersByCategory,
   OrderStatis,
   OrderUpdateInput,
+  TodayIncomeAndAOV,
+  TopSellingItems,
 } from "../libs/types/order";
 import { shapeIntoMongooseObjectId } from "../libs/config";
 import Errors, { HttpCode, Message } from "../libs/Errors";
@@ -213,8 +216,23 @@ class OrderService {
       return val.orderStatus === OrderStatus.COMPLETED;
     }).length;
 
-    // Orders By Category
-    const ordersByCategory = await this.orderItemModel.aggregate([
+    const ordersByCategory = await this.ordersByCategory();
+    const topSellingItems = await this.topSellingItems();
+    const todayIncomeAndAOV = await this.todayIncomeAndAOV();
+
+    const data: OrderStatis = {
+      totalOrder: allOrders.length,
+      pendingOrder: pendingOrder,
+      complatedOrder: complatedOrder,
+      ordersByCategory: ordersByCategory,
+      topSellingItems: topSellingItems,
+      todayIncomeAndAOV: todayIncomeAndAOV,
+    };
+    return data;
+  }
+
+  private async ordersByCategory(): Promise<OrdersByCategory[]> {
+    const data = await this.orderItemModel.aggregate([
       {
         $lookup: {
           from: "orders",
@@ -249,12 +267,23 @@ class OrderService {
         },
       },
       { $addFields: { orders: { $size: "$orderIds" } } },
-      { $project: { orderIds: 0 } },
-      { $sort: { revenue: -1 } },
+      {
+        $project: {
+          collection: "$_id",
+          totalQuantity: 1,
+          revenue: 1,
+          orders: 1,
+          _id: 0,
+        },
+      },
+      { $sort: { totalQuantity: -1 } },
     ]);
+    return data;
+  }
 
+  private async topSellingItems(): Promise<TopSellingItems[]> {
     // Top selling Items
-    const topSellingItems = await this.orderItemModel.aggregate([
+    const data = await this.orderItemModel.aggregate([
       {
         $lookup: {
           from: "orders",
@@ -297,9 +326,12 @@ class OrderService {
       { $sort: { totalQuantity: -1 } },
       { $limit: 6 },
     ]);
+    return data;
+  }
 
+  private async todayIncomeAndAOV(): Promise<TodayIncomeAndAOV[]> {
     // Today's Income and Avarege Order Value
-    const todayIncomeAndAOV = await this.orderModel.aggregate([
+    const data = await this.orderModel.aggregate([
       {
         $match: {
           paymentStatus: "PAID",
@@ -313,7 +345,7 @@ class OrderService {
                     $dateSubtract: {
                       startDate: "$$NOW",
                       unit: "day",
-                      amount: 1,
+                      amount: 23,
                       timezone: "Asia/Seoul",
                     },
                   },
@@ -343,16 +375,8 @@ class OrderService {
           },
         },
       },
-      { $project: { _id: 0 } },
+      { $project: { _id: 0, orders: 0 } },
     ]);
-    const data: OrderStatis = {
-      totalOrder: allOrders.length,
-      pendingOrder: pendingOrder,
-      complatedOrder: complatedOrder,
-      ordersByCategory: ordersByCategory,
-      topSellingItems: topSellingItems,
-      todayIncomeAndAOV: todayIncomeAndAOV,
-    };
     return data;
   }
 }
