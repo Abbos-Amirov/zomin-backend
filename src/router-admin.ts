@@ -7,6 +7,11 @@ import orderController from "./controllers/order.controller";
 const routerAdmin = Router();
 
 // Products
+routerAdmin.get(
+  "/product/all",
+  adminController.verifyAdmin,
+  productController.getAllProducts
+);
 routerAdmin.post(
   "/product/create",
   adminController.verifyAdmin,
@@ -66,7 +71,5 @@ routerAdmin.get(
   adminController.verifyAdmin,
   orderController.getOrderStatis
 );
-
-// Dashboard
 
 export default routerAdmin;

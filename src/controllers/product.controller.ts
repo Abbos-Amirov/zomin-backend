@@ -85,6 +85,30 @@ productController.createNewProduct = async (
   }
 };
 
+productController.getAllProducts = async (req: Request, res: Response) => {
+  try {
+    console.log("getAllProducts");
+    const { page, limit, order, productCollection, search } = req.query;
+    console.log(req.query);
+    const inquiry: ProductInquiry = {
+      order: String(order),
+      page: Number(page),
+      limit: Number(limit),
+    };
+    if (productCollection) {
+      inquiry.productCollection = productCollection as ProductCollection;
+    }
+    if (search) inquiry.search = String(search);
+
+    const result = await productService.getAllProducts(inquiry);
+    res.status(HttpCode.OK).json(result);
+  } catch (err) {
+    console.log("Error, getAllProducts:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 productController.updateChosenProduct = async (req: Request, res: Response) => {
   try {
     console.log("updateChosenProduct");

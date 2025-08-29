@@ -103,6 +103,31 @@ class ProductService {
     }
   }
 
+  public async getAllProducts(inquiry: ProductInquiry): Promise<Product[]> {
+    const match: T = {};
+
+    if (inquiry.productCollection)
+      match.productCollection = inquiry.productCollection;
+    if (inquiry.search)
+      match.productName = { $regex: new RegExp(inquiry.search, "i") };
+
+    const sort: T =
+      inquiry.order === "productPrice"
+        ? { [inquiry.order]: 1 }
+        : { [inquiry.order]: -1 };
+    const result = await this.productModel
+      .aggregate([
+        { $match: match },
+        { $sort: sort },
+        { $skip: (inquiry.page - 1) * inquiry.limit },
+        { $limit: inquiry.limit },
+      ])
+      .exec();
+    if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    return result;
+  }
+
   public async updateChosenProduct(
     id: string,
     input: ProductUpdateInput
