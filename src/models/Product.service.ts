@@ -6,6 +6,7 @@ import {
   Product,
   ProductInput,
   ProductInquiry,
+  ProductsStat,
   ProductUpdateInput,
 } from "../libs/types/product";
 import ProductModel from "../schema/Product.model";
@@ -104,7 +105,7 @@ class ProductService {
   }
 
   public async getAllProducts(inquiry: ProductInquiry): Promise<Product[]> {
-    const match: T = {};
+    const match: T = { productStatus: { $ne: ProductStatus.DELETE } };
 
     if (inquiry.productCollection)
       match.productCollection = inquiry.productCollection;
@@ -139,6 +140,41 @@ class ProductService {
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
     return result;
+  }
+
+  public async getProductsStat(): Promise<ProductsStat[]> {
+    const data = await this.productModel
+      .aggregate([
+        { $match: { productStatus: { $ne: "DELETE" } } },
+
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            available: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ["$productStatus", "PROCESS"] },
+                      { $gt: ["$productLeftCount", 0] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+        {
+          $addFields: { unavailable: { $subtract: ["$total", "$available"] } },
+        },
+        { $project: { _id: 0 } },
+      ])
+      .exec();
+    if (!data) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    return data;
   }
 }
 

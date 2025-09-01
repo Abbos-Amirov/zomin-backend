@@ -9,20 +9,25 @@ const routerAdmin = Router();
 // Products
 routerAdmin.get(
   "/product/all",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   productController.getAllProducts
 );
 routerAdmin.post(
   "/product/create",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   makeUploader("products").array("productImages", 5),
   productController.createNewProduct
 );
 routerAdmin.post(
   "/product/:id",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   makeUploader("products").array("productImages", 5),
   productController.updateChosenProduct
+);
+routerAdmin.get(
+  "/product/all/stat",
+  // adminController.verifyAdmin,
+  productController.getProductsStat
 );
 
 // User
@@ -40,7 +45,7 @@ routerAdmin.post(
 // Table
 routerAdmin.get(
   "/table/all",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   tableController.getAllTables
 );
 routerAdmin
@@ -68,7 +73,7 @@ routerAdmin.post(
 );
 routerAdmin.get(
   "/order/statis",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   orderController.getOrderStatis
 );
 

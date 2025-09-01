@@ -124,4 +124,18 @@ productController.updateChosenProduct = async (req: Request, res: Response) => {
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
+
+productController.getProductsStat = async (req: Request, res: Response) => {
+  try {
+    console.log("getProductsStat");
+    const result = await productService.getProductsStat();
+
+    res.status(HttpCode.OK).json(result);
+  } catch (err) {
+    console.log("Error, getProductsStat:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 export default productController;
