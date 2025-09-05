@@ -55,7 +55,8 @@ export interface OrderInquiry {
   limit: number;
   type?: OrderType;
   status?: OrderStatus;
-  payStatus?: PaymentMethod;
+  payStatus?: PaymentStatus;
+  payMeth?: PaymentMethod;
   search?: string;
   orderStatus?: OrderStatus;
 }

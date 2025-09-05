@@ -171,12 +171,15 @@ class OrderService {
 
   /** ADMIN */
   public async getAllOrders(inquiry: OrderInquiry): Promise<Order[]> {
-    const match: T = {};
+    const match: T = { orderStatus: { $ne: OrderStatus.PAUSE } };
 
-    if (inquiry.payStatus) match.payStatus = inquiry.payStatus;
-    if (inquiry.status) match.status = inquiry.status;
-    if (inquiry.type) match.type = inquiry.type;
-    if (inquiry.search) match.search = inquiry.search;
+    if (inquiry.payStatus) match.paymentStatus = inquiry.payStatus;
+    if (inquiry.payMeth) match.paymentMethod = inquiry.payMeth;
+    if (inquiry.status) match.orderStatus = inquiry.status;
+    if (inquiry.type) match.orderType = inquiry.type;
+    if (inquiry.search)
+      match.memberId = { $regex: new RegExp(inquiry.search, "i") };
+    console.log(match);
     const result = await this.orderModel
       .aggregate([
         { $match: match },

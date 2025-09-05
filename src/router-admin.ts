@@ -63,12 +63,12 @@ routerAdmin
 // Orders
 routerAdmin.get(
   "/order/all",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   orderController.getAllOrders
 );
 routerAdmin.post(
   "/order/:id",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   orderController.updateChosenOrder
 );
 routerAdmin.get(
