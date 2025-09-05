@@ -47,7 +47,7 @@ productController.getProduct = async (req: ExtendedRequest, res: Response) => {
     const activeIdentifier = req.table?.activeIdentifier ?? null,
       result = await productService.getProduct(memberId, activeIdentifier, id);
 
-    res.status(HttpCode.OK).json({ result: result });
+    res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getProduct:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
@@ -109,12 +109,31 @@ productController.getAllProducts = async (req: Request, res: Response) => {
   }
 };
 
-productController.updateChosenProduct = async (req: Request, res: Response) => {
+productController.updateChosenProduct = async (
+  req: ExtendedRequest,
+  res: Response
+) => {
   try {
     console.log("updateChosenProduct");
     const id = req.params.id;
     const input: ProductUpdateInput = req.body;
 
+    // Normalize existing images
+    let existingImages: string[] = [];
+    if (Array.isArray(req.body.existingImages)) {
+      existingImages = req.body.existingImages;
+    } else if (req.body.existingImages) {
+      existingImages = [req.body.existingImages];
+    }
+
+    // Collect new uploads
+    const newFiles =
+      (req.files as Express.Multer.File[] | undefined)?.map((ele) =>
+        ele.path.replace(/\\/g, "/")
+      ) || [];
+
+    // Merge arrays
+    input.productImages = [...existingImages, ...newFiles];
     const result = await productService.updateChosenProduct(id, input);
 
     res.status(HttpCode.OK).json(result);
