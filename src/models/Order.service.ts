@@ -178,7 +178,7 @@ class OrderService {
     if (inquiry.status) match.orderStatus = inquiry.status;
     if (inquiry.type) match.orderType = inquiry.type;
     if (inquiry.search)
-      match.memberId = { $regex: new RegExp(inquiry.search, "i") };
+      match.orderType = { $regex: new RegExp(inquiry.search, "i") };
     console.log(match);
     const result = await this.orderModel
       .aggregate([

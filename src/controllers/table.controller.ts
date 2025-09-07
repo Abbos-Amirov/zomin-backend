@@ -87,6 +87,20 @@ tableController.updateChosenTable = async (req: Request, res: Response) => {
   }
 };
 
+tableController.deleteChosenTable = async (req: Request, res: Response) => {
+  try {
+    console.log("deleteChosenTable");
+    const id = req.params.id;
+
+    const result = await tableService.deleteChosenTable(id);
+    res.status(HttpCode.OK).json(result);
+  } catch (err) {
+    console.log("Error, deleteChosenTable:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 /** Clients */
 tableController.qrLanding = async (req: Request, res: Response) => {
   try {

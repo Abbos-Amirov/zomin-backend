@@ -33,12 +33,12 @@ routerAdmin.get(
 // User
 routerAdmin.get(
   "/user/all",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   adminController.getUsers
 );
 routerAdmin.post(
   "/user/edit",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   adminController.updateChosenUser
 );
 
@@ -51,13 +51,18 @@ routerAdmin.get(
 routerAdmin
   .post(
     "/table/create",
-    adminController.verifyAdmin,
+    // adminController.verifyAdmin,
     tableController.createNewTable
   )
   .post(
     "/table/:id",
-    adminController.verifyAdmin,
+    // adminController.verifyAdmin,
     tableController.updateChosenTable
+  )
+  .post(
+    "/table/delete/:id",
+    // adminController.verifyAdmin,
+    tableController.deleteChosenTable
   );
 
 // Orders

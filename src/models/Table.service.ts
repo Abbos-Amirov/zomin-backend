@@ -37,7 +37,7 @@ class TableService {
     const result = await this.tableModel
       .aggregate([
         { $match: match },
-        { $sort: { createdAt: -1 } },
+        { $sort: { createdAt: 1 } },
         { $skip: (inquiry.page - 1) * inquiry.limit },
         { $limit: inquiry.limit },
       ])
@@ -67,7 +67,8 @@ class TableService {
       input.activeIdentifier = null;
     if (input.tableCall)
       await this.notifService.updateCallNotif(tableId, {
-        message: MessageNotif.TABLE_CALL_UPDATE, notifStatus: NotifStatus.READ
+        message: MessageNotif.TABLE_CALL_UPDATE,
+        notifStatus: NotifStatus.READ,
       });
     console.log("input: updateChosenTable:", input);
     const result = await this.tableModel
@@ -75,6 +76,17 @@ class TableService {
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
     return result;
+  }
+
+  public async deleteChosenTable(id: string): Promise<boolean> {
+    try {
+      id = shapeIntoMongooseObjectId(id);
+      const result = await this.tableModel.findByIdAndDelete(id);
+      return result ? true : false;
+    } catch (err) {
+      console.log("Error, model: deleteChosenTable: ", err);
+      throw new Errors(HttpCode.BAD_REQUEST, Message.SOMETHING_WENT_WRONG);
+    }
   }
 
   public async qrLanding(qrToken: string): Promise<Table> {
