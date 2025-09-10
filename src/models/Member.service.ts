@@ -20,6 +20,17 @@ class MemberService {
   }
 
   /** MEMBER */
+  public async getRestaurant(): Promise<Member> {
+    const result = await this.memberModel
+      .findOne({
+        memberType: MemberType.RESTAURANT,
+      })
+      .exec();
+    if (!result) throw new Errors(HttpCode.OK, Message.NO_DATA_FOUND);
+
+    return result;
+  }
+
   public async signup(input: MemberInput): Promise<Member> {
     const exist = await this.memberModel
       .findOne({ memberType: MemberType.RESTAURANT })
@@ -63,19 +74,17 @@ class MemberService {
 
     return await this.memberModel.findById(member._id).lean().exec();
   }
-    public async getMemberDetail(member: Member): Promise<Member> {
+  public async getMemberDetail(member: Member): Promise<Member> {
     const memberId = shapeIntoMongooseObjectId(member._id);
-    const match: T = {id: memberId};
-    if(member.memberStatus) match.memberStatus = MemberStatus.ACTIVE;
-    const result = await this.memberModel
-      .findOne(match)
-      .exec();
+    const match: T = { id: memberId };
+    if (member.memberStatus) match.memberStatus = MemberStatus.ACTIVE;
+    const result = await this.memberModel.findOne(match).exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
     return result;
   }
 
-    public async updateMember(
+  public async updateMember(
     member: Member,
     input: MemberUpdateInput
   ): Promise<Member> {
@@ -88,7 +97,20 @@ class MemberService {
     return result;
   }
 
-    public async addUserPoint(member: Member, point: number): Promise<Member> {
+  public async getTopUsers(): Promise<Member[]> {
+    const result = await this.memberModel
+      .find({
+        memberStatus: MemberStatus.ACTIVE,
+        memberPoints: { $gte: 1 },
+      })
+      .sort({ memberPoints: -1 })
+      .limit(4)
+      .exec();
+    if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    return result;
+  }
+
+  public async addUserPoint(member: Member, point: number): Promise<Member> {
     const memberId = shapeIntoMongooseObjectId(member._id);
     return await this.memberModel
       .findOneAndUpdate(
@@ -102,7 +124,6 @@ class MemberService {
       )
       .exec();
   }
-
 
   /** ADMIN */
 

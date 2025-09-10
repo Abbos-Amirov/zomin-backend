@@ -7,6 +7,7 @@ import orderController from "./controllers/order.controller";
 import tableController from "./controllers/table.controller";
 
 /** MEMBER */
+router.get("/member/restaurant", memberController.getRestaurant);
 router.post("/member/login", memberController.login);
 router.post("/member/signup", memberController.signup);
 router.post("/member/logout", memberController.logout);
@@ -21,6 +22,7 @@ router.post(
   makeUploader("members").single("memberImage"),
   memberController.updateMember
 );
+router.get("/member/top-users", memberController.getTopUsers);
 
 /** Product */
 router.get("/product/all", productController.getProducts);
