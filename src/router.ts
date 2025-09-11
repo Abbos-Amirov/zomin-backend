@@ -7,47 +7,46 @@ import orderController from "./controllers/order.controller";
 import tableController from "./controllers/table.controller";
 
 /** MEMBER */
-router.get("/member/restaurant", memberController.getRestaurant);
-router.post("/member/login", memberController.login);
-router.post("/member/signup", memberController.signup);
-router.post("/member/logout", memberController.logout);
-router.get(
-  "/member/detail",
-  memberController.verifyAuth,
-  memberController.getMemberDetail
-);
-router.post(
-  "/member/update",
-  memberController.verifyMember,
-  makeUploader("members").single("memberImage"),
-  memberController.updateMember
-);
-router.get("/member/top-users", memberController.getTopUsers);
+router
+  .get("/member/restaurant", memberController.getRestaurant)
+  .post("/member/login", memberController.login)
+  .post("/member/signup", memberController.signup)
+  .post("/member/logout", memberController.logout)
+  .get(
+    "/member/detail",
+    memberController.verifyAuth,
+    memberController.getMemberDetail
+  )
+  .post(
+    "/member/update",
+    memberController.verifyMember,
+    makeUploader("members").single("memberImage"),
+    memberController.updateMember
+  )
+  .get("/member/top-users", memberController.getTopUsers);
 
 /** Product */
-router.get("/product/all", productController.getProducts);
-router.get(
-  "/product/:id",
-  memberController.retrieveAuth,
-  productController.getProduct
-);
+router
+  .get("/product/all", productController.getProducts)
+  .get(
+    "/product/:id",
+    memberController.retrieveAuth,
+    productController.getProduct
+  );
 
 /** Order */
-router.post(
-  "/order/create",
-  memberController.verifyAuth,
-  orderController.createOrder
-);
-router.get(
-  "/order/all",
-  memberController.verifyAuth,
-  orderController.getMyOrders
-);
-router.post(
-  "/order/update",
-  memberController.verifyAuth,
-  orderController.updateOrder
-);
+router
+  .post(
+    "/order/create",
+    memberController.verifyAuth,
+    orderController.createOrder
+  )
+  .get("/order/all", memberController.verifyAuth, orderController.getMyOrders)
+  .post(
+    "/order/update",
+    memberController.verifyAuth,
+    orderController.updateOrder
+  );
 
 /** Table */
 router
@@ -56,6 +55,11 @@ router
     "/table/call/:id",
     tableController.verifyTable,
     tableController.clickTableCall
+  )
+  .post(
+    "/table/logout",
+    tableController.verifyTable,
+    tableController.TableLogout
   );
 
 export default router;

@@ -141,4 +141,16 @@ tableController.clickTableCall = async (req: Request, res: Response) => {
   }
 };
 
+tableController.TableLogout = (req: ExtendedRequest, res: Response) => {
+  try {
+    console.log("TableLogout");
+    res.cookie("tableToken", null, { maxAge: 0, httpOnly: true });
+    res.status(HttpCode.OK).json({ logout: true });
+  } catch (err) {
+    console.log("Error, TableLogout:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 export default tableController;
