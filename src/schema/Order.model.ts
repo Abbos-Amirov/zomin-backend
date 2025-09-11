@@ -21,7 +21,7 @@ const orderSchema = new Schema(
         required: true,
       },
 
-      deliveryFee: {
+      orderDelivery: {
         type: Number,
         required: true,
       },

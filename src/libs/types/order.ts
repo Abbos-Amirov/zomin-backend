@@ -65,7 +65,7 @@ export interface OrderInput {
   orderType: OrderType;
   orderStatus?: OrderStatus;
   orderTotal: number;
-  deliveryFee: number;
+  orderDelivery: number;
   tableId?: ObjectId;
   memberId?: ObjectId;
   orderNote?: string;

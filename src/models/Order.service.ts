@@ -61,12 +61,12 @@ class OrderService {
       throw new Errors(HttpCode.BAD_REQUEST, Message.NO_MEMBER_NICK);
     }
 
-    const deliveryFee =
+    const orderDelivery =
       orderType === OrderType.DELIVERY ? (amount < 100 ? 5 : 0) : 0;
 
     const order: OrderInput = {
-      orderTotal: amount + deliveryFee,
-      deliveryFee,
+      orderTotal: amount + orderDelivery,
+      orderDelivery,
       orderType,
       memberId: isMember(client) ? shapeIntoMongooseObjectId(client._id) : null,
       tableId: isTable(client) ? shapeIntoMongooseObjectId(client._id) : null,
@@ -108,11 +108,17 @@ class OrderService {
   }
 
   public async getMyOrders(
-    member: Member,
+    member: Member | null,
+    table: Table | null,
     inquiry: OrderInquiry
   ): Promise<Order[]> {
-    const memberId = shapeIntoMongooseObjectId(member._id);
-    const matches = { memberId: memberId, orderStatus: inquiry.orderStatus };
+    const memberId = shapeIntoMongooseObjectId(member?._id);
+    const tableId = shapeIntoMongooseObjectId(table?._id);
+    const matches = {
+      memberId: memberId,
+      tableId: tableId,
+      orderStatus: inquiry.orderStatus,
+    };
 
     const result = await this.orderModel
       .aggregate([
@@ -143,16 +149,19 @@ class OrderService {
   }
 
   public async updateOrder(
-    member: Member,
+    member: Member | null,
+    table: Table | null,
     input: OrderUpdateInput
   ): Promise<Order> {
-    const memberId = shapeIntoMongooseObjectId(member._id);
+    const memberId = shapeIntoMongooseObjectId(member?._id);
+    const tableId = shapeIntoMongooseObjectId(table?._id);
     const orderId = shapeIntoMongooseObjectId(input.orderId);
     const orderStatus = input.orderStatus;
 
     const result = await this.orderModel
       .findOneAndUpdate(
         {
+          tableId: tableId,
           memberId: memberId,
           _id: orderId,
         },
@@ -163,7 +172,7 @@ class OrderService {
 
     if (!result) throw new Errors(HttpCode.NOT_MODIFIED, Message.UPDATE_FAILED);
 
-    if (orderStatus === OrderStatus.PENDING) {
+    if (member && orderStatus === OrderStatus.PENDING) {
       await this.memberService.addUserPoint(member, 1);
     }
     return result;

@@ -27,7 +27,7 @@ orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
     const client: Member | Table = req.member ? req.member : req.table;
     const result = await orderService.createOrder(client, req.body);
 
-    res.status(HttpCode.CREATED).json( result );
+    res.status(HttpCode.CREATED).json(result);
   } catch (err) {
     console.log("Error, createOrder:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
@@ -45,9 +45,13 @@ orderController.getMyOrders = async (req: ExtendedRequest, res: Response) => {
       orderStatus: orderStatus as OrderStatus,
     };
 
-    const result = await orderService.getMyOrders(req.member, inquiry);
+    const result = await orderService.getMyOrders(
+      req.member,
+      req.table,
+      inquiry
+    );
 
-    res.status(HttpCode.CREATED).json( result );
+    res.status(HttpCode.CREATED).json(result);
   } catch (err) {
     console.log("Error, getMyOrders:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
@@ -59,9 +63,9 @@ orderController.updateOrder = async (req: ExtendedRequest, res: Response) => {
   try {
     console.log("updateOrder");
     const input: OrderUpdateInput = req.body;
-    const result = await orderService.updateOrder(req.member, input);
+    const result = await orderService.updateOrder(req.member, req.table, input);
 
-    res.status(HttpCode.CREATED).json( result );
+    res.status(HttpCode.CREATED).json(result);
   } catch (err) {
     console.log("Error, updateOrder:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
