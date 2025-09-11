@@ -50,11 +50,12 @@ router.post(
 );
 
 /** Table */
-router.get("/table/qr/:id", tableController.qrLanding);
-router.get(
-  "/table/call/:id",
-  tableController.verifyTable,
-  tableController.clickTableCall
-);
+router
+  .get("/table/qr/:id", tableController.qrLanding)
+  .get(
+    "/table/call/:id",
+    tableController.verifyTable,
+    tableController.clickTableCall
+  );
 
 export default router;

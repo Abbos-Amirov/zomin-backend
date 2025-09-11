@@ -2,10 +2,15 @@ import TableService from "../models/Table.service";
 import { T } from "../libs/types/common";
 import { NextFunction, Request, Response } from "express";
 import Errors, { HttpCode, Message } from "../libs/Errors";
-import { TableInput, TableInquiry } from "../libs/types/table";
+import {
+  TableInput,
+  TableInquiry,
+  TableUpdateInput,
+} from "../libs/types/table";
 import AuthService from "../models/Auth.service";
 import { AUTH_TIMER_TABLE } from "../libs/config";
 import { ExtendedRequest } from "../libs/types/member";
+import { TableStatus } from "../libs/enums/table.enum";
 
 const tableService = new TableService();
 const authService = new AuthService();
@@ -77,8 +82,10 @@ tableController.updateChosenTable = async (req: Request, res: Response) => {
   try {
     console.log("updateChosenTable");
     const id = req.params.id;
-
-    const result = await tableService.updateChosenTable(id, req.body);
+    const input: TableUpdateInput = req.body;
+    if (input.tableStatus && input.tableStatus !== TableStatus.OCCUPIED)
+      res.cookie("tableToken", null, { maxAge: 0, httpOnly: true });
+    const result = await tableService.updateChosenTable(id, input);
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, updateChosenTable:", err);
@@ -91,7 +98,6 @@ tableController.deleteChosenTable = async (req: Request, res: Response) => {
   try {
     console.log("deleteChosenTable");
     const id = req.params.id;
-
     const result = await tableService.deleteChosenTable(id);
     res.status(HttpCode.OK).json(result);
   } catch (err) {
@@ -114,7 +120,7 @@ tableController.qrLanding = async (req: Request, res: Response) => {
       httpOnly: false,
     });
 
-    res.status(HttpCode.OK).json({ result: result, tableToken: token });
+    res.status(HttpCode.CREATED).json({ table: result, tableToken: token });
   } catch (err) {
     console.log("Error, qrLanding:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
