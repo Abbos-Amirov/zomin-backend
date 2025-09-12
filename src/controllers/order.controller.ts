@@ -1,7 +1,8 @@
 import OrderService from "../models/Order.service";
-import Errors, { HttpCode, Message } from "../libs/Errors";
+import Errors, { HttpCode } from "../libs/Errors";
 import { T } from "../libs/types/common";
 import { Request, Response } from "express";
+import { getIo } from "../server";
 import {
   OrderInquiry,
   OrderStatis,
@@ -26,6 +27,15 @@ orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
     console.log("createOrder");
     const client: Member | Table = req.member ? req.member : req.table;
     const result = await orderService.createOrder(client, req.body);
+
+    const io = getIo();
+    io.to("admins").emit("newNotification", {
+      type: "ORDER",
+      message: req.member
+        ? `New order from User: ${req.member.memberNick}`
+        : `New order from Table: ${req.table.tableNumber}`,
+      read: false,
+    });
 
     res.status(HttpCode.CREATED).json(result);
   } catch (err) {

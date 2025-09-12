@@ -1,4 +1,5 @@
 import TableService from "../models/Table.service";
+import { getIo } from "../server";
 import { T } from "../libs/types/common";
 import { NextFunction, Request, Response } from "express";
 import Errors, { HttpCode, Message } from "../libs/Errors";
@@ -11,6 +12,9 @@ import AuthService from "../models/Auth.service";
 import { AUTH_TIMER_TABLE } from "../libs/config";
 import { ExtendedRequest } from "../libs/types/member";
 import { TableStatus } from "../libs/enums/table.enum";
+import { TableCall } from "../libs/enums/tableCall.enum";
+
+
 
 const tableService = new TableService();
 const authService = new AuthService();
@@ -133,6 +137,14 @@ tableController.clickTableCall = async (req: Request, res: Response) => {
     const tableId = req.params.id;
     const result = await tableService.clickTableCall(tableId);
 
+    const io = getIo();
+    io.to("admins").emit("newNotification", {
+      type: "TABLE_CALL",
+      message: `Table: ${result.tableNumber} pressed call button`,
+      tableId: result._id,
+      tableCall: TableCall.ACTIVE,
+      read: false,
+    });
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, clickTableCall:", err);
