@@ -3,3 +3,4 @@ uploader
 dist
 .env
 .DS_Store
+.env.production

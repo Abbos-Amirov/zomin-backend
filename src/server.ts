@@ -1,11 +1,13 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({
+  path: process.env.NODE_ENV === "production" ? ".env.production" : ".env",
+});
 import mongoose from "mongoose";
 import app from "./app";
 import { createServer } from "http";
 import { Server } from "socket.io";
 
-const PORT = process.env.PORT ?? 4003;
+const PORT = process.env.PORT ?? 4010;
 
 let ioInstance: Server;
 
