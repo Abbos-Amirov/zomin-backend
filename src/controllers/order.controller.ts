@@ -1,5 +1,5 @@
 import OrderService from "../models/Order.service";
-import Errors, { HttpCode } from "../libs/Errors";
+import Errors, { HttpCode, Message } from "../libs/Errors";
 import { T } from "../libs/types/common";
 import { Request, Response } from "express";
 import { getIo } from "../server";
@@ -26,6 +26,11 @@ orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
   try {
     console.log("createOrder");
     const client: Member | Table = req.member ? req.member : req.table;
+    
+    if (!client || !client._id) {
+      throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
+    }
+    
     const result = await orderService.createOrder(client, req.body);
 
     const io = getIo();
@@ -40,6 +45,11 @@ orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
     res.status(HttpCode.CREATED).json(result);
   } catch (err) {
     console.log("Error, createOrder:", err);
+    console.log("Error details:", {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      client: req.member ? 'member' : req.table ? 'table' : 'none'
+    });
     if (err instanceof Errors) res.status(err.code).json(err);
     else res.status(Errors.standard.code).json(Errors.standard);
   }

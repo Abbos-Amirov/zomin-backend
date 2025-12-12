@@ -43,8 +43,18 @@ class OrderService {
     client: Member | Table,
     input: OrderItemInput[]
   ): Promise<Order> {
-    const memberId = shapeIntoMongooseObjectId(client._id);
+    if (!client || !client._id) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.NO_MEMBER_NICK);
+    }
+    
+    if (!input || !Array.isArray(input) || input.length === 0) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
+    
     const amount = input.reduce((accumulator: number, item: OrderItemInput) => {
+      if (!item.itemPrice || !item.itemQuantity) {
+        throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+      }
       return accumulator + item.itemPrice * item.itemQuantity;
     }, 0);
 
@@ -81,14 +91,22 @@ class OrderService {
         orderId: isMember(client) ? orderId : null,
         tableId: isTable(client) ? orderId : null,
         title: isMember(client)
-          ? Title.USER_ORDER + `${client.memberNick}`
-          : Title.TABLE_ORDER + `${client.tableNumber}`,
-        message: MessageNotif.USER_ORDER,
+          ? Title.USER_ORDER + `${client.memberNick || ''}`
+          : Title.TABLE_ORDER + `${client.tableNumber || ''}`,
+        message: isMember(client) ? MessageNotif.USER_ORDER : MessageNotif.TABLE_ORDER,
       });
 
       return newOrder;
     } catch (err) {
       console.log("Error, model: createOrder: ", err);
+      console.log("Error details:", {
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+        client: client ? { hasId: !!client._id, type: isMember(client) ? 'member' : isTable(client) ? 'table' : 'unknown' } : 'undefined'
+      });
+      if (err instanceof Errors) {
+        throw err;
+      }
       throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
     }
   }
