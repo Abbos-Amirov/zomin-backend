@@ -40,7 +40,11 @@ memberController.signup = async (req: Request, res: Response) => {
 
     res.cookie("accessToken", token, {
       maxAge: AUTH_TIMER_MEMBER * 3600 * 1000,
-      httpOnly: false,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+      domain: ".navruz.food",
     });
 
     res.status(HttpCode.CREATED).json({ member: result, accessToken: token });
@@ -60,7 +64,11 @@ memberController.login = async (req: Request, res: Response) => {
 
     res.cookie("accessToken", token, {
       maxAge: AUTH_TIMER_MEMBER * 3600 * 1000,
-      httpOnly: false,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+      domain: ".navruz.food",
     });
 
     res.status(HttpCode.OK).json({ member: result, accessToken: token });
@@ -137,7 +145,9 @@ memberController.verifyAuth = async (
     const tableToken = req.cookies["tableToken"];
     if (memberToken) req.member = await authService.checkAuth(memberToken);
     if (tableToken) req.table = await authService.checkTableAuth(tableToken);
-    const table = await tableService.verifyActivite(req.table?.activeIdentifier);
+    const table = await tableService.verifyActivite(
+      req.table?.activeIdentifier
+    );
     if (!memberToken && !table)
       throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
     next();
