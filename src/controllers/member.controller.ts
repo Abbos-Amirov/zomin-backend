@@ -41,13 +41,13 @@ memberController.signup = async (req: Request, res: Response) => {
     res.cookie("accessToken", token, {
       maxAge: AUTH_TIMER_MEMBER * 3600 * 1000,
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
+      sameSite: "none",
+      secure: true,
       path: "/",
       domain: ".navruz.food",
     });
 
-    res.status(HttpCode.CREATED).json({ member: result, accessToken: token });
+    res.status(HttpCode.CREATED).json({ member: result });
   } catch (err) {
     console.log("Error, signup:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
@@ -61,17 +61,18 @@ memberController.login = async (req: Request, res: Response) => {
     const input: LoginInput = req.body,
       result = await memberService.login(input),
       token = await authService.createToken(result);
+    console.log("token: ", token);
 
     res.cookie("accessToken", token, {
       maxAge: AUTH_TIMER_MEMBER * 3600 * 1000,
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
+      sameSite: "none",
+      secure: true,
       path: "/",
       domain: ".navruz.food",
     });
 
-    res.status(HttpCode.OK).json({ member: result, accessToken: token });
+    res.status(HttpCode.OK).json({ member: result });
   } catch (err) {
     console.log("Error, login:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
@@ -82,7 +83,14 @@ memberController.login = async (req: Request, res: Response) => {
 memberController.logout = (req: ExtendedRequest, res: Response) => {
   try {
     console.log("logout");
-    res.cookie("accessToken", null, { maxAge: 0, httpOnly: true });
+    res.cookie("accessToken", "", {
+      maxAge: 0,
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+      path: "/",
+      domain: ".navruz.food",
+    });
     res.status(HttpCode.OK).json({ logout: true });
   } catch (err) {
     console.log("Error, logout:", err);
