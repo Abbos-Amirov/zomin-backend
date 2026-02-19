@@ -15,65 +15,65 @@ routerAdmin.post(
 );
 routerAdmin.post(
   "/product/:id",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   makeUploader("products").array("productImages", 5),
   productController.updateChosenProduct
 );
 routerAdmin.get(
   "/product/all/stat",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   productController.getProductsStat
 );
 
 // User
 routerAdmin.get(
   "/user/all",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   adminController.getUsers
 );
 routerAdmin.post(
   "/user/edit",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   adminController.updateChosenUser
 );
 
 // Table
 routerAdmin.get(
   "/table/all",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   tableController.getAllTables
 );
 routerAdmin
   .post(
     "/table/create",
-    adminController.verifyAdmin,
+    // adminController.verifyAdmin,
     tableController.createNewTable
   )
   .post(
     "/table/:id",
-    adminController.verifyAdmin,
+    // adminController.verifyAdmin,
     tableController.updateChosenTable
   )
   .post(
     "/table/delete/:id",
-    adminController.verifyAdmin,
+    // adminController.verifyAdmin,
     tableController.deleteChosenTable
   );
 
 // Orders
 routerAdmin.get(
   "/order/all",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   orderController.getAllOrders
 );
 routerAdmin.post(
   "/order/:id",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   orderController.updateChosenOrder
 );
 routerAdmin.get(
   "/order/statis",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   orderController.getOrderStatis
 );
 

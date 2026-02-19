@@ -14,7 +14,7 @@ router
   .post("/member/logout", memberController.logout)
   .get(
     "/member/detail",
-    memberController.verifyAuth,
+    // memberController.verifyAuth,
     memberController.getMemberDetail
   )
   .post(
