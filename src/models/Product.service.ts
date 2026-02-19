@@ -26,24 +26,28 @@ class ProductService {
 
   /** MEMBER */
   public async getProducts(inquiry: ProductInquiry): Promise<Product[]> {
-    const match: T = { productStatus: ProductStatus.PROCESS };
+    const match: T = { productStatus: ProductStatus };
 
     if (inquiry.productCollection)
       match.productCollection = inquiry.productCollection;
     if (inquiry.search)
       match.productName = { $regex: new RegExp(inquiry.search, "i") };
 
+    const page = Math.max(1, Number(inquiry.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(inquiry.limit) || 10));
+    const order = inquiry.order || "createdAt";
+
     const sort: T =
-      inquiry.order === "productPrice"
-        ? { [inquiry.order]: 1 }
-        : { [inquiry.order]: -1 };
+      order === "productPrice"
+        ? { [order]: 1 }
+        : { [order]: -1 };
 
     const result = await this.productModel
       .aggregate([
         { $match: match },
         { $sort: sort },
-        { $skip: (inquiry.page - 1) * inquiry.limit },
-        { $limit: inquiry.limit },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
       ])
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
@@ -100,6 +104,7 @@ class ProductService {
       return await this.productModel.create(input);
     } catch (err) {
       console.log("Error, model: createNewProduct: ", err);
+      if (err instanceof Error) console.log("MongoDB error details:", err.message);
       throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
     }
   }
@@ -112,16 +117,20 @@ class ProductService {
     if (inquiry.search)
       match.productName = { $regex: new RegExp(inquiry.search, "i") };
 
+    const page = Math.max(1, Number(inquiry.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(inquiry.limit) || 10));
+    const order = inquiry.order || "createdAt";
+
     const sort: T =
-      inquiry.order === "productPrice"
-        ? { [inquiry.order]: 1 }
-        : { [inquiry.order]: -1 };
+      order === "productPrice"
+        ? { [order]: 1 }
+        : { [order]: -1 };
     const result = await this.productModel
       .aggregate([
         { $match: match },
         { $sort: sort },
-        { $skip: (inquiry.page - 1) * inquiry.limit },
-        { $limit: inquiry.limit },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
       ])
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);

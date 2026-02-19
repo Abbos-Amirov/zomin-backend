@@ -7,7 +7,7 @@ import app from "./app";
 import { createServer } from "http";
 import { Server } from "socket.io";
 
-const PORT = process.env.PORT ?? 4010;
+const PORT = process.env.PORT ?? 3001;
 
 let ioInstance: Server;
 

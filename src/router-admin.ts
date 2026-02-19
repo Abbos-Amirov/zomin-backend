@@ -7,14 +7,9 @@ import orderController from "./controllers/order.controller";
 const routerAdmin = Router();
 
 // Products
-routerAdmin.get(
-  "/product/all",
-  adminController.verifyAdmin,
-  productController.getAllProducts
-);
+routerAdmin.get("/product/all", productController.getAllProducts);
 routerAdmin.post(
   "/product/create",
-  adminController.verifyAdmin,
   makeUploader("products").array("productImages", 5),
   productController.createNewProduct
 );
