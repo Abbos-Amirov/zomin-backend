@@ -21,9 +21,9 @@ productController.getProducts = async (req: Request, res: Response) => {
     const { page, limit, order, productCollection, search } = req.query;
     console.log(req.query);
     const inquiry: ProductInquiry = {
-      order: String(order),
-      page: Number(page),
-      limit: Number(limit),
+      order: order ? String(order) : "createdAt",
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
     };
     if (productCollection) {
       inquiry.productCollection = productCollection as ProductCollection;
@@ -63,23 +63,22 @@ productController.createNewProduct = async (
 ) => {
   try {
     console.log("createNewProduct");
-    if (!req.files?.length)
-      throw new Errors(
-        HttpCode.INTERNAL_SERVER_ERROR,
-        Message.SOMETHING_WENT_WRONG
-      );
 
-    const data: ProductInput = req.body;
-    data.productImages = req.files?.map((ele) => {
-      return ele.path.replace(/\\/g, "/");
-    });
+    const data: ProductInput = {
+      ...req.body,
+      productPrice: Number(req.body.productPrice),
+      productLeftCount: Number(req.body.productLeftCount),
+      productVolume: req.body.productVolume ? Number(req.body.productVolume) : undefined,
+    };
+    data.productImages = req.files?.length
+      ? req.files.map((ele) => ele.path.replace(/\\/g, "/"))
+      : [];
 
     const result = await productService.createNewProduct(data);
 
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, createNewProduct:", err);
-    const message = console.log("Error, createOrder:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
     else res.status(Errors.standard.code).json(Errors.standard);
   }
@@ -91,9 +90,9 @@ productController.getAllProducts = async (req: Request, res: Response) => {
     const { page, limit, order, productCollection, search } = req.query;
     console.log(req.query);
     const inquiry: ProductInquiry = {
-      order: String(order),
-      page: Number(page),
-      limit: Number(limit),
+      order: order ? String(order) : "createdAt",
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
     };
     if (productCollection) {
       inquiry.productCollection = productCollection as ProductCollection;

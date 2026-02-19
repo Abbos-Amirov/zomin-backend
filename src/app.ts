@@ -16,7 +16,7 @@ app.use(express.urlencoded({extended: true}));
 app.use(express.json());
 app.use(cors({ 
   credentials: true, 
-  origin: ["https://navruz.food", "https://admin.navruz.food"]
+  origin: true
 }));
 app.use(cookieParser());
 app.use(morgan(MORGAN_FORMAT));

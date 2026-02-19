@@ -7,78 +7,73 @@ import orderController from "./controllers/order.controller";
 const routerAdmin = Router();
 
 // Products
-routerAdmin.get(
-  "/product/all",
-  adminController.verifyAdmin,
-  productController.getAllProducts
-);
+routerAdmin.get("/product/all", productController.getAllProducts);
 routerAdmin.post(
   "/product/create",
-  adminController.verifyAdmin,
   makeUploader("products").array("productImages", 5),
   productController.createNewProduct
 );
 routerAdmin.post(
   "/product/:id",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   makeUploader("products").array("productImages", 5),
   productController.updateChosenProduct
 );
 routerAdmin.get(
   "/product/all/stat",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   productController.getProductsStat
 );
 
 // User
 routerAdmin.get(
   "/user/all",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   adminController.getUsers
 );
 routerAdmin.post(
   "/user/edit",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   adminController.updateChosenUser
 );
 
 // Table
 routerAdmin.get(
   "/table/all",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   tableController.getAllTables
 );
 routerAdmin
   .post(
     "/table/create",
-    adminController.verifyAdmin,
+    // adminController.verifyAdmin,
     tableController.createNewTable
   )
   .post(
     "/table/:id",
-    adminController.verifyAdmin,
+    // adminController.verifyAdmin,
     tableController.updateChosenTable
   )
   .post(
     "/table/delete/:id",
-    adminController.verifyAdmin,
+    // adminController.verifyAdmin,
     tableController.deleteChosenTable
   );
 
 // Orders
 routerAdmin.get(
   "/order/all",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   orderController.getAllOrders
 );
 routerAdmin.post(
   "/order/:id",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   orderController.updateChosenOrder
 );
 routerAdmin.get(
   "/order/statis",
-  adminController.verifyAdmin,
+  // adminController.verifyAdmin,
   orderController.getOrderStatis
 );
 
