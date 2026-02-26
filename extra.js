@@ -8,7 +8,9 @@ const directoriesToCopy = [
 async function copyDirectories() {
 	try {
 		for (const directory of directoriesToCopy) {
-			await fs.copy(directory.source, directory.destination);
+			if (await fs.pathExists(directory.source)) {
+				await fs.copy(directory.source, directory.destination);
+			}
 		}
 		console.log('Successfully Duplicated!');
 	} catch (error) {
