@@ -18,8 +18,12 @@ export function getIo(): Server {
   return ioInstance;
 }
 
+const MONGO_URI =
+  process.env.MONGO_URI ||
+  "mongodb+srv://Oscar:A3mzJqupDes8QLkx@cluster0.dbpygr2.mongodb.net/zomin";
+
 mongoose
-  .connect(process.env.MONGO_URI as string, {})
+  .connect(MONGO_URI, {})
   .then(() => {
     console.log("MongoDB connection succeed");
 
