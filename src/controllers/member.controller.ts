@@ -34,9 +34,19 @@ memberController.getRestaurant = async (req: Request, res: Response) => {
 memberController.signup = async (req: Request, res: Response) => {
   try {
     console.log("signup");
-    const newMember: MemberInput = req.body,
-      result = await memberService.signup(newMember),
+    const body = req.body;
+    // Admin frontend username/phone ni memberNick/memberPhone ga o'giradi
+    const newMember: MemberInput = {
+      memberNick: body.memberNick || body.username,
+      memberPhone: body.memberPhone || body.phone,
+      memberPassword: body.memberPassword || body.password,
+      memberType: body.memberType || "RESTAURANT",
+    };
+    const result = await memberService.signup(newMember),
       token = await authService.createToken(result);
+
+    const host = req.get("host") || "";
+    const cookieDomain = host.includes("navruz.food") ? ".navruz.food" : undefined;
 
     res.cookie("accessToken", token, {
       maxAge: AUTH_TIMER_MEMBER * 3600 * 1000,
@@ -44,7 +54,7 @@ memberController.signup = async (req: Request, res: Response) => {
       sameSite: "none",
       secure: true,
       path: "/",
-      domain: ".navruz.food",
+      ...(cookieDomain && { domain: cookieDomain }),
     });
 
     res.status(HttpCode.CREATED).json({ member: result });
@@ -58,10 +68,17 @@ memberController.signup = async (req: Request, res: Response) => {
 memberController.login = async (req: Request, res: Response) => {
   try {
     console.log("login");
-    const input: LoginInput = req.body,
-      result = await memberService.login(input),
+    const body = req.body;
+    const input: LoginInput = {
+      memberNick: body.memberNick || body.username,
+      memberPassword: body.memberPassword || body.password,
+    };
+    const result = await memberService.login(input),
       token = await authService.createToken(result);
     console.log("token: ", token);
+
+    const host = req.get("host") || "";
+    const cookieDomain = host.includes("navruz.food") ? ".navruz.food" : undefined;
 
     res.cookie("accessToken", token, {
       maxAge: AUTH_TIMER_MEMBER * 3600 * 1000,
@@ -69,7 +86,7 @@ memberController.login = async (req: Request, res: Response) => {
       sameSite: "none",
       secure: true,
       path: "/",
-      domain: ".navruz.food",
+      ...(cookieDomain && { domain: cookieDomain }),
     });
 
     res.status(HttpCode.OK).json({ member: result });
@@ -83,13 +100,16 @@ memberController.login = async (req: Request, res: Response) => {
 memberController.logout = (req: ExtendedRequest, res: Response) => {
   try {
     console.log("logout");
+    const host = req.get("host") || "";
+    const cookieDomain = host.includes("navruz.food") ? ".navruz.food" : undefined;
+
     res.cookie("accessToken", "", {
       maxAge: 0,
       httpOnly: true,
       sameSite: "none",
       secure: true,
       path: "/",
-      domain: ".navruz.food",
+      ...(cookieDomain && { domain: cookieDomain }),
     });
     res.status(HttpCode.OK).json({ logout: true });
   } catch (err) {

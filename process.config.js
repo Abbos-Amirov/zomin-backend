@@ -7,6 +7,7 @@ module.exports = {
       watch: false,
       env_production: {
         NODE_ENV: "production",
+        PORT: "4009",
         MONGO_URI: "mongodb+srv://Oscar:A3mzJqupDes8QLkx@cluster0.dbpygr2.mongodb.net/zomin",
       },
       env_development: {

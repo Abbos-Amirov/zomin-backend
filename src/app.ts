@@ -14,9 +14,31 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use("/uploads", express.static("./uploads"));
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
-app.use(cors({ 
-  credentials: true, 
-  origin: true
+// CORS: admin frontend va server manziliga ruxsat
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:4009",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "http://38.247.134.248",
+  "http://38.247.134.248:80",
+  "http://38.247.134.248:3000",
+  "http://38.247.134.248:4009",
+  "https://38.247.134.248",
+  "https://38.247.134.248:443",
+];
+app.use(cors({
+  credentials: true,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
 }));
 app.use(cookieParser());
 app.use(morgan(MORGAN_FORMAT));
