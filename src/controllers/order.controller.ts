@@ -99,8 +99,8 @@ orderController.getAllOrders = async (req: Request, res: Response) => {
     console.log("getAllOrders");
     const { page, limit, status, payStatus, search, type, payMeth } = req.query;
     const inquiry: OrderInquiry = {
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
     };
     if (search) inquiry.search = String(search);
     if (status) inquiry.status = status as OrderStatus;
