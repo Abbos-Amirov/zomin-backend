@@ -32,6 +32,11 @@ const tableSchema = new Schema(
       type: String,
       default: null,
     },
+
+    cleaningUntil: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

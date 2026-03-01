@@ -67,6 +67,11 @@ routerAdmin.get(
   orderController.getAllOrders
 );
 routerAdmin.post(
+  "/order/table/:tableId/complete",
+  // adminController.verifyAdmin,
+  orderController.completeTableOrders
+);
+routerAdmin.post(
   "/order/:id",
   // adminController.verifyAdmin,
   orderController.updateChosenOrder

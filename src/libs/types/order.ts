@@ -80,6 +80,8 @@ export interface OrderStatis {
   ordersByCategory: OrdersByCategory[];
   topSellingItems: TopSellingItems[];
   todayIncomeAndAOV: TodayIncomeAndAOV[];
+  todaySoldItems: TodaySoldItems[];
+  salesByTable: SalesByTable[];
 }
 
 export interface OrdersByCategory {
@@ -99,4 +101,21 @@ export interface TodayIncomeAndAOV {
   totalSum: number;
   deliverySum: number;
   aovGross: number;
+  orderCount: number;
+}
+
+/** Bugungi sotilgan ovqatlar */
+export interface TodaySoldItems {
+  productId: string;
+  productName: string;
+  totalQuantity: number;
+  totalRevenue: number;
+}
+
+/** Stol bo'yicha bugungi savdo */
+export interface SalesByTable {
+  tableId: string;
+  tableNumber: string;
+  orderCount: number;
+  totalSum: number;
 }

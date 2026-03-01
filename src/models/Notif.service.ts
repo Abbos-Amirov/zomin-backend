@@ -1,6 +1,6 @@
 import { NotifStatus } from "../libs/enums/notif.enum";
 import { shapeIntoMongooseObjectId } from "../libs/config";
-import { Notif, NotifInput, NotifUpdate } from "../libs/types/notif";
+import { NotifInput, NotifUpdate } from "../libs/types/notif";
 import NotifModel from "../schema/Notification.model";
 import { ObjectId } from "mongoose";
 

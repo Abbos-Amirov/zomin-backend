@@ -10,18 +10,21 @@ import {
   OrdersByCategory,
   OrderStatis,
   OrderUpdateInput,
+  SalesByTable,
   TodayIncomeAndAOV,
+  TodaySoldItems,
   TopSellingItems,
 } from "../libs/types/order";
 import { shapeIntoMongooseObjectId } from "../libs/config";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import MemberService from "./Member.service";
-import { OrderStatus, OrderType } from "../libs/enums/order.enum";
+import { OrderStatus, OrderType, PaymentStatus } from "../libs/enums/order.enum";
 import { T } from "../libs/types/common";
 import { MemberType } from "../libs/enums/member.enum";
 import { Table } from "../libs/types/table";
 import { isMember, isTable } from "../libs/utils/validators";
 import NotifService from "./Notif.service";
+import TableService from "./Table.service";
 import { NotifStatus, NotifType } from "../libs/enums/notif.enum";
 import { MessageNotif, Title } from "../libs/notif";
 
@@ -31,11 +34,14 @@ class OrderService {
   private readonly memberService;
   private readonly notifService;
 
+  private readonly tableService;
+
   constructor() {
     this.orderModel = OrderModel;
     this.orderItemModel = OrderItemModel;
     this.memberService = new MemberService();
     this.notifService = new NotifService();
+    this.tableService = new TableService();
   }
 
   /** MEMBER **/
@@ -283,6 +289,47 @@ class OrderService {
     return result;
   }
 
+  /** Stol buyurtmalarini to'landi deb belgilash — bugungi savdo ga qo'shiladi */
+  public async completeTableOrders(tableId: string): Promise<{ updated: number; totalSum: number }> {
+    const id = shapeIntoMongooseObjectId(tableId);
+
+    const ordersToUpdate = await this.orderModel
+      .find({
+        tableId: id,
+        orderType: OrderType.TABLE,
+        orderStatus: { $nin: [OrderStatus.CANCELLED, OrderStatus.COMPLETED] },
+      })
+      .lean()
+      .exec();
+
+    const totalSum = ordersToUpdate.reduce((sum: number, o: any) => sum + (o.orderTotal || 0), 0);
+
+    const result = await this.orderModel
+      .updateMany(
+        {
+          tableId: id,
+          orderType: OrderType.TABLE,
+          orderStatus: { $nin: [OrderStatus.CANCELLED, OrderStatus.COMPLETED] },
+        },
+        {
+          $set: {
+            orderStatus: OrderStatus.COMPLETED,
+            paymentStatus: PaymentStatus.PAID,
+          },
+        }
+      )
+      .exec();
+
+    if (result.modifiedCount > 0) {
+      await this.tableService.setTableCleaning(id);
+    }
+
+    return {
+      updated: result.modifiedCount || 0,
+      totalSum,
+    };
+  }
+
   public async getStatis(): Promise<OrderStatis> {
     // Order Status
     const allOrders = await this.orderModel.find().exec();
@@ -296,6 +343,8 @@ class OrderService {
     const ordersByCategory = await this.ordersByCategory();
     const topSellingItems = await this.topSellingItems();
     const todayIncomeAndAOV = await this.todayIncomeAndAOV();
+    const todaySoldItems = await this.todaySoldItems();
+    const salesByTable = await this.salesByTable();
 
     const data: OrderStatis = {
       totalOrder: allOrders.length,
@@ -304,6 +353,8 @@ class OrderService {
       ordersByCategory: ordersByCategory,
       topSellingItems: topSellingItems,
       todayIncomeAndAOV: todayIncomeAndAOV,
+      todaySoldItems: todaySoldItems,
+      salesByTable: salesByTable,
     };
     return data;
   }
@@ -321,9 +372,8 @@ class OrderService {
       { $unwind: "$order" },
       {
         $match: {
-          "order.paymentStatus": "PAID",
-          "order.orderStatus": { $ne: "CANCELED" },
-          // "order.createdAt": { $gte: ISODate("2025-08-01"), $lt: ISODate("2025-09-01") }
+          "order.paymentStatus": PaymentStatus.PAID,
+          "order.orderStatus": { $ne: OrderStatus.CANCELLED },
         },
       },
       {
@@ -372,9 +422,8 @@ class OrderService {
       { $unwind: "$order" },
       {
         $match: {
-          "order.paymentStatus": "PAID",
-          "order.orderStatus": { $ne: "CANCELED" },
-          // "order.createdAt": { $gte: ISODate("2025-08-01"), $lt: ISODate("2025-09-01") }
+          "order.paymentStatus": PaymentStatus.PAID,
+          "order.orderStatus": { $ne: OrderStatus.CANCELLED },
         },
       },
       {
@@ -407,52 +456,133 @@ class OrderService {
   }
 
   private async todayIncomeAndAOV(): Promise<TodayIncomeAndAOV[]> {
-    // Today's Income and Avarege Order Value
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
     const data = await this.orderModel.aggregate([
       {
         $match: {
-          paymentStatus: "PAID",
-          orderStatus: { $ne: "CANCELED" },
-          $expr: {
-            $and: [
-              {
-                $gte: [
-                  "$createdAt",
-                  {
-                    $dateSubtract: {
-                      startDate: "$$NOW",
-                      unit: "day",
-                      amount: 23,
-                      timezone: "Asia/Seoul",
-                    },
-                  },
-                ],
-              },
-              { $lte: ["$createdAt", "$$NOW"] },
-            ],
-          },
+          paymentStatus: PaymentStatus.PAID,
+          orderStatus: OrderStatus.COMPLETED,
+          createdAt: { $gte: startOfToday },
         },
       },
       {
         $group: {
           _id: null,
-          orders: { $sum: 1 },
+          orderCount: { $sum: 1 },
           totalSum: { $sum: "$orderTotal" },
-          deliverySum: { $sum: "$deliveryFee" },
+          deliverySum: { $sum: "$orderDelivery" },
         },
       },
       {
         $addFields: {
           aovGross: {
             $cond: [
-              { $gt: ["$orders", 0] },
-              { $divide: ["$totalSum", "$orders"] },
+              { $gt: ["$orderCount", 0] },
+              { $divide: ["$totalSum", "$orderCount"] },
               0,
             ],
           },
         },
       },
-      { $project: { _id: 0, orders: 0 } },
+      { $project: { _id: 0 } },
+    ]);
+    return data.length > 0 ? data : [{ totalSum: 0, deliverySum: 0, aovGross: 0, orderCount: 0 }];
+  }
+
+  private async todaySoldItems(): Promise<TodaySoldItems[]> {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const data = await this.orderItemModel.aggregate([
+      {
+        $lookup: {
+          from: "orders",
+          localField: "orderId",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.paymentStatus": PaymentStatus.PAID,
+          "order.orderStatus": OrderStatus.COMPLETED,
+          "order.createdAt": { $gte: startOfToday },
+        },
+      },
+      {
+        $group: {
+          _id: "$productId",
+          totalQuantity: { $sum: "$itemQuantity" },
+          totalRevenue: { $sum: { $multiply: ["$itemQuantity", "$itemPrice"] } },
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: "$product" },
+      {
+        $project: {
+          _id: 0,
+          productId: { $toString: "$_id" },
+          productName: "$product.productName",
+          totalQuantity: 1,
+          totalRevenue: 1,
+        },
+      },
+      { $sort: { totalQuantity: -1 } },
+    ]);
+    return data;
+  }
+
+  private async salesByTable(): Promise<SalesByTable[]> {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const data = await this.orderModel.aggregate([
+      {
+        $match: {
+          orderType: OrderType.TABLE,
+          tableId: { $ne: null },
+          paymentStatus: PaymentStatus.PAID,
+          orderStatus: OrderStatus.COMPLETED,
+          createdAt: { $gte: startOfToday },
+        },
+      },
+      {
+        $lookup: {
+          from: "tables",
+          localField: "tableId",
+          foreignField: "_id",
+          as: "tableData",
+        },
+      },
+      { $unwind: "$tableData" },
+      {
+        $group: {
+          _id: "$tableId",
+          tableNumber: { $first: "$tableData.tableNumber" },
+          orderCount: { $sum: 1 },
+          totalSum: { $sum: "$orderTotal" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          tableId: { $toString: "$_id" },
+          tableNumber: 1,
+          orderCount: 1,
+          totalSum: 1,
+        },
+      },
+      { $sort: { totalSum: -1 } },
     ]);
     return data;
   }

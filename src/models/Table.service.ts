@@ -26,6 +26,8 @@ class TableService {
   }
 
   public async getAllTables(inquiry: TableInquiry): Promise<Table[]> {
+    await this.checkAndSetAvailable();
+
     const match: T = {};
 
     if (inquiry.status) match.tableStatus = inquiry.status;
@@ -97,6 +99,7 @@ class TableService {
         {
           activeIdentifier: activeIdentifier,
           tableStatus: TableStatus.OCCUPIED,
+          $unset: { cleaningUntil: 1 },
         },
         { new: true }
       )
@@ -136,6 +139,28 @@ class TableService {
       .findOne({ activeIdentifier: activeIdentifier })
       .exec();
     return result;
+  }
+
+  public async setTableCleaning(tableId: ObjectId): Promise<void> {
+    const cleaningUntil = new Date(Date.now() + 3 * 60 * 1000);
+    await this.tableModel
+      .findByIdAndUpdate(tableId, {
+        tableStatus: TableStatus.CLEANING,
+        cleaningUntil,
+      })
+      .exec();
+  }
+
+  public async checkAndSetAvailable(): Promise<void> {
+    await this.tableModel
+      .updateMany(
+        {
+          tableStatus: TableStatus.CLEANING,
+          cleaningUntil: { $lte: new Date() },
+        },
+        { $set: { tableStatus: TableStatus.AVAILABLE }, $unset: { cleaningUntil: 1 } }
+      )
+      .exec();
   }
 }
 

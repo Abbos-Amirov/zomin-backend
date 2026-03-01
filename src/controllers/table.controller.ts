@@ -29,6 +29,7 @@ tableController.verifyTable = async (
   try {
     const tableToken = req.cookies["tableToken"];
     if (tableToken) req.table = await authService.checkTableAuth(tableToken);
+    if (!req.table) throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
     const activeIdentifier = await tableService.verifyActivite(
       req.table.activeIdentifier
     );
@@ -132,9 +133,10 @@ tableController.qrLanding = async (req: Request, res: Response) => {
   }
 };
 
-tableController.clickTableCall = async (req: Request, res: Response) => {
+tableController.clickTableCall = async (req: ExtendedRequest, res: Response) => {
   try {
-    const tableId = req.params.id;
+    if (!req.table?._id) throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
+    const tableId = String(req.table._id);
     const result = await tableService.clickTableCall(tableId);
 
     const io = getIo();

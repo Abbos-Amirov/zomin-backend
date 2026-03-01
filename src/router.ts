@@ -52,7 +52,7 @@ router
 router
   .get("/table/qr/:id", tableController.qrLanding)
   .get(
-    "/table/call/:id",
+    "/table/call",
     tableController.verifyTable,
     tableController.clickTableCall
   )
