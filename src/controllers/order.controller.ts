@@ -44,6 +44,8 @@ orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
         tableNumber: req.table?.tableNumber ?? null,
         read: false,
       });
+      const fullOrder = await orderService.getOrderByIdWithDetails(String(result._id));
+      if (fullOrder) io.to("admins").emit("orderCreated", fullOrder);
     } catch (ioErr) {
       console.log("Socket emit failed:", ioErr);
     }
