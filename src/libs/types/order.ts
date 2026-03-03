@@ -23,17 +23,20 @@ export interface Order {
   orderType: OrderType;
   orderStatus: OrderStatus;
   orderTotal: number;
-  deliveryFee: number;
+  deliveryFee?: number;
+  orderDelivery?: number;
   tableId: ObjectId | null;
   memberId: ObjectId | null;
+  tableNumber?: string;
+  memberNick?: string;
   orderNote: string;
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
   createdAt: Date;
   updatedAt: Date;
   /** from aggregations */
-  orderItems: OrderItem[];
-  productData: Product[];
+  orderItems?: OrderItem[];
+  productData?: Product[];
 }
 
 export interface OrderItemInput {
