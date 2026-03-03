@@ -16,7 +16,7 @@ import {
 import { shapeIntoMongooseObjectId } from "../libs/config";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import MemberService from "./Member.service";
-import { OrderStatus, OrderType } from "../libs/enums/order.enum";
+import { OrderStatus, OrderType, PaymentStatus } from "../libs/enums/order.enum";
 import { T } from "../libs/types/common";
 import { MemberType } from "../libs/enums/member.enum";
 import { Table } from "../libs/types/table";
@@ -333,6 +333,26 @@ class OrderService {
     return result;
   }
 
+  /** Stol bo‘yicha barcha buyurtmalarni yakunlash (PAID + COMPLETED) — bugungi daromadga kiradi */
+  public async completeTableOrders(tableId: string): Promise<{ updatedCount: number; totalSum: number }> {
+    const tid = shapeIntoMongooseObjectId(tableId);
+    const unpaid = await this.orderModel
+      .find({ tableId: tid, paymentStatus: { $ne: PaymentStatus.PAID } })
+      .lean()
+      .exec();
+    if (!unpaid.length) {
+      return { updatedCount: 0, totalSum: 0 };
+    }
+    const totalSum = unpaid.reduce((s, o) => s + (o.orderTotal ?? 0), 0);
+    await this.orderModel
+      .updateMany(
+        { tableId: tid, paymentStatus: { $ne: PaymentStatus.PAID } },
+        { $set: { orderStatus: OrderStatus.COMPLETED, paymentStatus: PaymentStatus.PAID } }
+      )
+      .exec();
+    return { updatedCount: unpaid.length, totalSum };
+  }
+
   public async getStatis(): Promise<OrderStatis> {
     // Order Status
     const allOrders = await this.orderModel.find().exec();
@@ -488,7 +508,7 @@ class OrderService {
           _id: null,
           orders: { $sum: 1 },
           totalSum: { $sum: "$orderTotal" },
-          deliverySum: { $sum: "$deliveryFee" },
+          deliverySum: { $sum: "$orderDelivery" },
         },
       },
       {

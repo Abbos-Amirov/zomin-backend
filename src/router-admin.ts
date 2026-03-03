@@ -79,5 +79,13 @@ routerAdmin.get(
   // adminController.verifyAdmin,
   orderController.getOrderStatis
 );
+routerAdmin.get(
+  "/order/table/:id/complete",
+  orderController.completeTableOrders
+);
+routerAdmin.post(
+  "/order/table/:id/complete",
+  orderController.completeTableOrders
+);
 
 export default routerAdmin;

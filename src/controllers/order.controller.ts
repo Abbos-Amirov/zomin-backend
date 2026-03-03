@@ -153,4 +153,19 @@ orderController.getOrderStatis = async (req: Request, res: Response) => {
   }
 };
 
+orderController.completeTableOrders = async (req: Request, res: Response) => {
+  try {
+    const tableId = req.params.id;
+    if (!tableId) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
+    const result = await orderService.completeTableOrders(tableId);
+    res.status(HttpCode.OK).json(result);
+  } catch (err) {
+    console.log("Error, completeTableOrders:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 export default orderController;
