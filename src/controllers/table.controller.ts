@@ -137,14 +137,20 @@ tableController.clickTableCall = async (req: Request, res: Response) => {
     const tableId = req.params.id;
     const result = await tableService.clickTableCall(tableId);
 
-    const io = getIo();
-    io.to("admins").emit("newNotification", {
-      type: "TABLE_CALL",
-      message: `Table: ${result.tableNumber} pressed call button`,
-      tableId: result._id,
-      tableCall: TableCall.ACTIVE,
-      read: false,
-    });
+    try {
+      const io = getIo();
+      io.to("admins").emit("newNotification", {
+        type: "TABLE_CALL",
+        message: `Table: ${result.tableNumber} pressed call button`,
+        tableId: result._id,
+        tableNumber: result.tableNumber,
+        tableCall: TableCall.ACTIVE,
+        read: false,
+      });
+    } catch (ioErr) {
+      console.log("Socket emit failed:", ioErr);
+    }
+
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, clickTableCall:", err);

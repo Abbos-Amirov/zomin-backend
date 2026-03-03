@@ -9,6 +9,23 @@ import { Server } from "socket.io";
 
 const PORT = process.env.PORT ?? 3001;
 
+const SOCKET_ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:3002",
+  "http://localhost:4009",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3002",
+  "http://127.0.0.1:4009",
+  "http://38.247.134.248",
+  "http://38.247.134.248:3000",
+  "http://38.247.134.248:3002",
+  "http://38.247.134.248:4009",
+  "https://38.247.134.248",
+  "https://38.247.134.248:443",
+];
+
 let ioInstance: Server;
 
 export function getIo(): Server {
@@ -27,10 +44,10 @@ mongoose
 
     ioInstance = new Server(httpServer, {
       cors: {
-        origin: "*",
+        origin: SOCKET_ALLOWED_ORIGINS,
         credentials: true,
       },
-      transports: ["websocket"],
+      transports: ["polling", "websocket"],
     });
 
     ioInstance.on("connection", (socket) => {

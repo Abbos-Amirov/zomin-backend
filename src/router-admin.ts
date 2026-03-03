@@ -60,6 +60,9 @@ routerAdmin
     tableController.deleteChosenTable
   );
 
+// Notifications (bazadagi + real-time uchun)
+routerAdmin.get("/notifications", adminController.getNotifications);
+
 // Orders
 routerAdmin.get(
   "/order/all",

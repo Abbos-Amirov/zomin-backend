@@ -33,14 +33,20 @@ orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
     
     const result = await orderService.createOrder(client, req.body);
 
-    const io = getIo();
-    io.to("admins").emit("newNotification", {
-      type: "ORDER",
-      message: req.member
-        ? `New order from User: ${req.member.memberNick}`
-        : `New order from Table: ${req.table.tableNumber}`,
-      read: false,
-    });
+    try {
+      const io = getIo();
+      io.to("admins").emit("newNotification", {
+        type: "ORDER",
+        message: req.member
+          ? `New order from User: ${req.member.memberNick}`
+          : `New order from Table: ${req.table.tableNumber}`,
+        tableId: req.table?._id ?? null,
+        tableNumber: req.table?.tableNumber ?? null,
+        read: false,
+      });
+    } catch (ioErr) {
+      console.log("Socket emit failed:", ioErr);
+    }
 
     res.status(HttpCode.CREATED).json(result);
   } catch (err) {
