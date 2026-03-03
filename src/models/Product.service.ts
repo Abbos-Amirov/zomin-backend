@@ -26,7 +26,7 @@ class ProductService {
 
   /** MEMBER */
   public async getProducts(inquiry: ProductInquiry): Promise<Product[]> {
-    const match: T = { productStatus: ProductStatus };
+    const match: T = { productStatus: ProductStatus.PROCESS };
 
     if (inquiry.productCollection)
       match.productCollection = inquiry.productCollection;
@@ -149,6 +149,30 @@ class ProductService {
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
     console.log("result>>", result)
+    return result;
+  }
+
+  /** Admin: mahsulotni bazadan butunlay o'chiradi (hard delete) */
+  public async deleteChosenProduct(id: string): Promise<Product | null> {
+    const productId = shapeIntoMongooseObjectId(id);
+    const result = await this.productModel.findByIdAndDelete(productId).exec();
+    if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    return result;
+  }
+
+  /** Admin: statusni almashtiradi — PROCESS (client ko'radi) ⟷ PAUSE (client ko'rmaydi) */
+  public async toggleProductStatus(id: string): Promise<Product> {
+    const productId = shapeIntoMongooseObjectId(id);
+    const product = await this.productModel.findById(productId).exec();
+    if (!product) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    const nextStatus =
+      product.productStatus === ProductStatus.PROCESS
+        ? ProductStatus.PAUSE
+        : ProductStatus.PROCESS;
+    const result = await this.productModel
+      .findByIdAndUpdate(productId, { productStatus: nextStatus }, { new: true })
+      .exec();
+    if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
     return result;
   }
 

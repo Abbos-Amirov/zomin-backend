@@ -24,6 +24,14 @@ routerAdmin.get(
   // adminController.verifyAdmin,
   productController.getProductsStat
 );
+routerAdmin.post(
+  "/product/delete/:id",
+  productController.deleteChosenProduct
+);
+routerAdmin.patch(
+  "/product/:id/toggle-status",
+  productController.toggleProductStatus
+);
 
 // User
 routerAdmin.get(

@@ -156,4 +156,30 @@ productController.getProductsStat = async (req: Request, res: Response) => {
   }
 };
 
+productController.deleteChosenProduct = async (req: Request, res: Response) => {
+  try {
+    console.log("deleteChosenProduct");
+    const id = req.params.id;
+    const result = await productService.deleteChosenProduct(id);
+    res.status(HttpCode.OK).json(result);
+  } catch (err) {
+    console.log("Error, deleteChosenProduct:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+productController.toggleProductStatus = async (req: Request, res: Response) => {
+  try {
+    console.log("toggleProductStatus");
+    const id = req.params.id;
+    const result = await productService.toggleProductStatus(id);
+    res.status(HttpCode.OK).json(result);
+  } catch (err) {
+    console.log("Error, toggleProductStatus:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 export default productController;
