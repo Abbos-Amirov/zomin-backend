@@ -13,6 +13,18 @@ routerAdmin.post(
   makeUploader("products").array("productImages", 5),
   productController.createNewProduct
 );
+routerAdmin.get(
+  "/product/:id/toggle-status",
+  productController.toggleProductStatus
+);
+routerAdmin.patch(
+  "/product/:id/toggle-status",
+  productController.toggleProductStatus
+);
+routerAdmin.post(
+  "/product/:id/toggle-status",
+  productController.toggleProductStatus
+);
 routerAdmin.post(
   "/product/:id",
   // adminController.verifyAdmin,
@@ -27,10 +39,6 @@ routerAdmin.get(
 routerAdmin.post(
   "/product/delete/:id",
   productController.deleteChosenProduct
-);
-routerAdmin.patch(
-  "/product/:id/toggle-status",
-  productController.toggleProductStatus
 );
 
 // User
