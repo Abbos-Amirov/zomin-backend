@@ -103,9 +103,11 @@ class ProductService {
     try {
       return await this.productModel.create(input);
     } catch (err) {
-      console.log("Error, model: createNewProduct: ", err);
-      if (err instanceof Error) console.log("MongoDB error details:", err.message);
-      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+      console.log("Error, model: createNewProduct:", err);
+      if (err && typeof err === "object" && "code" in err && err.code === 11000) {
+        throw new Errors(HttpCode.BAD_REQUEST, Message.DUPLICATE_PRODUCT);
+      }
+      throw err;
     }
   }
 

@@ -23,6 +23,7 @@ export enum Message {
   WRONG_PASSWORD = "Wrong password entered, please try again",
   NOT_AUTHENTICATED = "You are not authenticated, Please login first!",
   NOT_TABLE = "No table found for this QR code",
+  DUPLICATE_PRODUCT = "Bunday mahsulot (nom + o'lcham + hajm) allaqachon mavjud",
 }
 
 class Errors extends Error {

@@ -63,12 +63,20 @@ productController.createNewProduct = async (
 ) => {
   try {
     console.log("createNewProduct");
-
+    const source = { ...req.query, ...req.body } as Record<string, unknown>;
+    const productPrice = Number(source.productPrice);
+    const productLeftCount = Number(source.productLeftCount);
+    if (!source.productCollection || !source.productName || Number.isNaN(productPrice) || Number.isNaN(productLeftCount)) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
     const data: ProductInput = {
-      ...req.body,
-      productPrice: Number(req.body.productPrice),
-      productLeftCount: Number(req.body.productLeftCount),
-      productVolume: req.body.productVolume ? Number(req.body.productVolume) : undefined,
+      productCollection: String(source.productCollection).trim() as ProductCollection,
+      productName: String(source.productName).trim(),
+      productPrice,
+      productLeftCount,
+      productSize: source.productSize != null ? (String(source.productSize).trim() as ProductInput["productSize"]) : undefined,
+      productVolume: source.productVolume != null ? Number(source.productVolume) : undefined,
+      productDesc: source.productDesc != null ? String(source.productDesc).trim() : undefined,
     };
     data.productImages = req.files?.length
       ? req.files.map((ele) => ele.path.replace(/\\/g, "/"))
@@ -79,8 +87,12 @@ productController.createNewProduct = async (
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, createNewProduct:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
-    else res.status(Errors.standard.code).json(Errors.standard);
+    if (err instanceof Errors) {
+      res.status(err.code).json(err);
+    } else {
+      const message = err instanceof Error ? err.message : Message.CREATE_FAILED;
+      res.status(HttpCode.BAD_REQUEST).json({ code: HttpCode.BAD_REQUEST, message });
+    }
   }
 };
 
