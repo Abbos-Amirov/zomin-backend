@@ -104,4 +104,9 @@ routerAdmin.post(
   orderController.completeTableOrders
 );
 
+// routerAdmin.post(
+//   "/order/table/:id/complete",
+//   orderController.completeTableOrders
+// );
+
 export default routerAdmin;
