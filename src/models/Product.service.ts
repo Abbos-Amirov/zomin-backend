@@ -173,9 +173,10 @@ class ProductService {
         : ProductStatus.PROCESS;
     const result = await this.productModel
       .findByIdAndUpdate(productId, { productStatus: nextStatus }, { new: true })
+      .lean()
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
-    return result;
+    return result as Product;
   }
 
   public async getProductsStat(): Promise<ProductsStat[]> {
