@@ -162,7 +162,7 @@ class ProductService {
     return result;
   }
 
-  /** Admin: statusni almashtiradi — PROCESS (client ko'radi) ⟷ PAUSE (client ko'rmaydi) */
+  /** Admin: faqat productStatus o'zgaradi; javobda to'liq document (productImages bilan) qaytariladi */
   public async toggleProductStatus(id: string): Promise<Product> {
     const productId = shapeIntoMongooseObjectId(id);
     const product = await this.productModel.findById(productId).exec();
@@ -171,8 +171,15 @@ class ProductService {
       product.productStatus === ProductStatus.PROCESS
         ? ProductStatus.PAUSE
         : ProductStatus.PROCESS;
+    await this.productModel
+      .findByIdAndUpdate(
+        productId,
+        { $set: { productStatus: nextStatus } },
+        { new: false }
+      )
+      .exec();
     const result = await this.productModel
-      .findByIdAndUpdate(productId, { productStatus: nextStatus }, { new: true })
+      .findById(productId)
       .lean()
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
