@@ -85,6 +85,11 @@ routerAdmin.get(
   // adminController.verifyAdmin,
   orderController.getAllOrders
 );
+routerAdmin.get(
+  "/orders/all/panel",
+  // adminController.verifyAdmin,
+  orderController.getAllOrdersPanel
+);
 routerAdmin.post(
   "/order/:id",
   // adminController.verifyAdmin,
