@@ -6,8 +6,10 @@ import mongoose from "mongoose";
 import app from "./app";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import OrderService from "./models/Order.service";
 
 const PORT = process.env.PORT ?? 3001;
+const orderService = new OrderService();
 
 const SOCKET_ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -57,6 +59,14 @@ mongoose
 
     httpServer.listen(PORT, () => {
       console.info(`Server running on http://localhost:${PORT}`);
+      setInterval(async () => {
+        try {
+          const data = await orderService.getAllOrdersPanel({ page: 1, limit: 500 });
+          ioInstance.to("admins").emit("panelOrders", data);
+        } catch (e) {
+          console.error("panelOrders emit error:", e);
+        }
+      }, 5000);
     });
   })
   .catch((err) => {
