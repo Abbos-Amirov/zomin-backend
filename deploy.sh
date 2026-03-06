@@ -11,7 +11,7 @@ npm run build
 # .env.production yaratish (serverda gitignore'da bo'lgani uchun mavjud emas)
 # NODE_ENV=production bo'lganda server.ts .env.production ni yuklaydi
 cat > .env.production << 'EOF'
-PORT=3001
+PORT=4009
 NODE_ENV=production
 MONGO_URI=mongodb+srv://Oscar:A3mzJqupDes8QLkx@cluster0.dbpygr2.mongodb.net/zomin
 SECRET_TOKEN=zam-zam-secret-key-2024
