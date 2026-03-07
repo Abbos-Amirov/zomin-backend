@@ -28,7 +28,8 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 // Routers
-app.use('/admin', routerAdmin); 
+app.use('/admin', routerAdmin);
+ 
 app.use('/', router);
 
 // 404 handler for API routes - prevents frontend paths from hitting backend
