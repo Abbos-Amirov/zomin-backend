@@ -432,6 +432,70 @@ class OrderService {
     return result;
   }
 
+  /** LINK source buyurtmalar (POST /order/link orqali yaratilgan) — admin uchun */
+  public async getLinkOrders(inquiry?: OrderInquiry): Promise<Order[]> {
+    const match: T = {
+      orderSource: OrderSource.LINK,
+      orderStatus: { $ne: OrderStatus.PAUSE },
+    };
+    const page = Math.max(1, Number(inquiry?.page) || 1);
+    const limit = Math.min(500, Math.max(1, Number(inquiry?.limit) || 50));
+
+    const result = await this.orderModel
+      .aggregate([
+        { $match: match },
+        { $sort: { createdAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: "tables",
+            localField: "tableId",
+            foreignField: "_id",
+            as: "tableData",
+          },
+        },
+        {
+          $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "memberData",
+          },
+        },
+        {
+          $lookup: {
+            from: "orderItems",
+            localField: "_id",
+            foreignField: "orderId",
+            as: "orderItems",
+          },
+        },
+        {
+          $lookup: {
+            from: "products",
+            localField: "orderItems.productId",
+            foreignField: "_id",
+            as: "productData",
+          },
+        },
+        {
+          $addFields: {
+            tableNumber: { $arrayElemAt: ["$tableData.tableNumber", 0] },
+            memberNick: { $arrayElemAt: ["$memberData.memberNick", 0] },
+          },
+        },
+        {
+          $project: {
+            tableData: 0,
+            memberData: 0,
+          },
+        },
+      ])
+      .exec();
+    return result || [];
+  }
+
   /** Birta buyurtmani to'liq (orderItems, productData, tableNumber, memberNick) qaytaradi — Socket orderCreated uchun */
   public async getOrderByIdWithDetails(orderId: string): Promise<Order | null> {
     const id = shapeIntoMongooseObjectId(orderId);

@@ -67,6 +67,14 @@ mongoose
           console.error("panelOrders emit error:", e);
         }
       }, 5000);
+      setInterval(async () => {
+        try {
+          const linkOrders = await orderService.getLinkOrders({ page: 1, limit: 500 });
+          ioInstance.to("admins").emit("linkOrders", linkOrders);
+        } catch (e) {
+          console.error("linkOrders emit error:", e);
+        }
+      }, 5000);
     });
   })
   .catch((err) => {

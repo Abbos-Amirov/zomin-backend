@@ -210,4 +210,21 @@ orderController.completeTableOrders = async (req: Request, res: Response) => {
   }
 };
 
+/** Admin: link orqali yaratilgan buyurtmalar (GET + har 5s Socket) */
+orderController.getLinkOrders = async (req: Request, res: Response) => {
+  try {
+    const { page, limit } = req.query;
+    const inquiry: OrderInquiry = {
+      page: Number(page) || 1,
+      limit: Number(limit) || 50,
+    };
+    const data = await orderService.getLinkOrders(inquiry);
+    res.status(HttpCode.OK).json(data);
+  } catch (err) {
+    console.log("Error, getLinkOrders:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 export default orderController;
