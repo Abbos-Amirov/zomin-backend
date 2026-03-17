@@ -2,6 +2,8 @@ import { Member } from "../libs/types/member";
 import { ObjectId } from "mongoose";
 import OrderModel from "../schema/Order.model";
 import OrderItemModel from "../schema/OrderItem.model";
+import TableModel from "../schema/Table.model";
+import ProductModel from "../schema/Product.model";
 import {
   Order,
   OrderInput,
@@ -12,11 +14,17 @@ import {
   OrderUpdateInput,
   TodayIncomeAndAOV,
   TopSellingItems,
+  LinkOrderInput,
 } from "../libs/types/order";
 import { shapeIntoMongooseObjectId } from "../libs/config";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import MemberService from "./Member.service";
-import { OrderStatus, OrderType, PaymentStatus } from "../libs/enums/order.enum";
+import {
+  OrderSource,
+  OrderStatus,
+  OrderType,
+  PaymentStatus,
+} from "../libs/enums/order.enum";
 import { T } from "../libs/types/common";
 import { MemberType } from "../libs/enums/member.enum";
 import { Table } from "../libs/types/table";
@@ -123,6 +131,95 @@ class OrderService {
     });
     const orderItemsState = await Promise.all(promisedList);
     console.log("orderItemsState", orderItemsState);
+  }
+
+  /** LINK ORDER (no auth, customer enters via normal link) */
+  public async createLinkOrder(payload: LinkOrderInput): Promise<Order> {
+    const {
+      restaurantId,
+      tableId,
+      customerName,
+      customerPhone,
+      arrivalInMinutes,
+      orderItems,
+    } = payload;
+
+    if (
+      !restaurantId ||
+      !tableId ||
+      !customerName ||
+      !customerPhone ||
+      typeof arrivalInMinutes !== "number" ||
+      arrivalInMinutes <= 0 ||
+      !orderItems ||
+      !Array.isArray(orderItems) ||
+      orderItems.length === 0
+    ) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
+
+    await this.memberService.getRestaurantById(restaurantId);
+
+    const tableObjectId = shapeIntoMongooseObjectId(tableId);
+    const table = await TableModel.findById(tableObjectId).exec();
+    if (!table) throw new Errors(HttpCode.NOT_FOUND, Message.NOT_TABLE);
+
+    const productIds = orderItems.map((i) =>
+      shapeIntoMongooseObjectId(i.productId)
+    );
+    const products = await ProductModel.find({
+      _id: { $in: productIds },
+    }).exec();
+    if (!products || products.length !== orderItems.length) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.NO_DATA_FOUND);
+    }
+    const priceMap = new Map<string, number>();
+    products.forEach((p) => {
+      priceMap.set(String(p._id), p.productPrice);
+    });
+
+    const normalizedItems: OrderItemInput[] = [];
+    let amount = 0;
+    for (const item of orderItems) {
+      const qty = Number((item as any).quantity);
+      if (!item.productId || !qty || qty <= 0) {
+        throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+      }
+      const pid = shapeIntoMongooseObjectId(item.productId as any);
+      const price = priceMap.get(String(pid));
+      if (price === undefined) {
+        throw new Errors(HttpCode.BAD_REQUEST, Message.NO_DATA_FOUND);
+      }
+      amount += price * qty;
+      normalizedItems.push({
+        itemQuantity: qty,
+        itemPrice: price,
+        productId: pid,
+      });
+    }
+
+    const orderDelivery = 0;
+    const orderInput: OrderInput = {
+      orderType: OrderType.TABLE,
+      orderStatus: OrderStatus.PENDING,
+      orderTotal: amount,
+      orderDelivery,
+      restaurantId: shapeIntoMongooseObjectId(restaurantId),
+      tableId: tableObjectId,
+      customerName,
+      customerPhone,
+      arrivalInMinutes,
+      orderSource: OrderSource.LINK,
+      paymentStatus: PaymentStatus.UNPAID,
+    };
+
+    const newOrderDoc = await this.orderModel.create(orderInput);
+    const orderId = newOrderDoc._id as ObjectId;
+    await this.recordOrderItem(orderId, normalizedItems);
+
+    const plainOrder = newOrderDoc.toObject() as Order;
+    (plainOrder as any).orderItems = normalizedItems;
+    return plainOrder;
   }
 
   public async getMyOrders(

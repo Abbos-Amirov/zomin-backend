@@ -1,5 +1,6 @@
 import { ObjectId } from "mongoose";
 import {
+  OrderSource,
   OrderStatus,
   OrderType,
   PaymentMethod,
@@ -20,6 +21,7 @@ export interface OrderItem {
 
 export interface Order {
   _id: ObjectId;
+  restaurantId?: ObjectId | null;
   orderType: OrderType;
   orderStatus: OrderStatus;
   orderTotal: number;
@@ -27,11 +29,15 @@ export interface Order {
   orderDelivery?: number;
   tableId: ObjectId | null;
   memberId: ObjectId | null;
+  customerName?: string;
+  customerPhone?: string;
+  arrivalInMinutes?: number;
   tableNumber?: string;
   memberNick?: string;
   orderNote: string;
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
+  orderSource?: OrderSource;
   createdAt: Date;
   updatedAt: Date;
   /** from aggregations */
@@ -69,11 +75,30 @@ export interface OrderInput {
   orderStatus?: OrderStatus;
   orderTotal: number;
   orderDelivery: number;
+   restaurantId?: ObjectId | null;
   tableId?: ObjectId;
   memberId?: ObjectId;
+  customerName?: string;
+  customerPhone?: string;
+  arrivalInMinutes?: number;
+  orderSource?: OrderSource;
   orderNote?: string;
   paymentStatus?: PaymentStatus;
   paymentMethod?: PaymentMethod;
+}
+
+export interface LinkOrderItemInput {
+  productId: string;
+  quantity: number;
+}
+
+export interface LinkOrderInput {
+  restaurantId: string;
+  tableId: string;
+  customerName: string;
+  customerPhone: string;
+  arrivalInMinutes: number;
+  orderItems: LinkOrderItemInput[];
 }
 
 export interface OrderStatis {

@@ -20,6 +20,18 @@ class MemberService {
   }
 
   /** MEMBER */
+  public async getRestaurantById(id: string): Promise<Member> {
+    const memberId = shapeIntoMongooseObjectId(id);
+    const result = await this.memberModel
+      .findOne({
+        _id: memberId,
+        memberType: MemberType.RESTAURANT,
+      })
+      .exec();
+    if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    return result;
+  }
+
   public async getRestaurant(): Promise<Member> {
     const result = await this.memberModel
       .findOne({

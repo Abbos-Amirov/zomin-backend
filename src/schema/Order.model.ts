@@ -1,9 +1,19 @@
 import mongoose, { Schema } from "mongoose";
-import { OrderType, PaymentMethod, PaymentStatus } from "../libs/enums/order.enum";
-import { OrderStatus } from "../libs/enums/order.enum";
+import {
+  OrderSource,
+  OrderType,
+  PaymentMethod,
+  PaymentStatus,
+  OrderStatus,
+} from "../libs/enums/order.enum";
 
 const orderSchema = new Schema(
     {
+      restaurantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Member",
+      },
+
       orderType: {
         type: String,
         enum: OrderType,
@@ -31,6 +41,18 @@ const orderSchema = new Schema(
         ref: 'Table',
       },
 
+      customerName: {
+        type: String,
+      },
+
+      customerPhone: {
+        type: String,
+      },
+
+      arrivalInMinutes: {
+        type: Number,
+      },
+
       memberId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Member',
@@ -50,6 +72,12 @@ const orderSchema = new Schema(
         type: String,
         enum: PaymentMethod,
         default: PaymentMethod.CARD, //TODO: 
+      },
+
+      orderSource: {
+        type: String,
+        enum: OrderSource,
+        default: OrderSource.QR,
       },
     },
     { timestamps: true }

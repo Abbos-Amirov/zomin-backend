@@ -41,6 +41,7 @@ router
     memberController.verifyAuth,
     orderController.createOrder
   )
+  .post("/order/link", orderController.createLinkOrder)
   .get("/order/all", memberController.verifyAuth, orderController.getMyOrders)
   .post(
     "/order/update",

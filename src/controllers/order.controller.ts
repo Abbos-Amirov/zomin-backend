@@ -7,6 +7,7 @@ import {
   OrderInquiry,
   OrderStatis,
   OrderUpdateInput,
+  LinkOrderInput,
 } from "../libs/types/order";
 import {
   OrderStatus,
@@ -58,6 +59,24 @@ orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
       stack: err instanceof Error ? err.stack : undefined,
       client: req.member ? 'member' : req.table ? 'table' : 'none'
     });
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/** LINK ORDER: customer comes from normal link (no auth) */
+orderController.createLinkOrder = async (req: Request, res: Response) => {
+  try {
+    console.log("createLinkOrder");
+    const payload = req.body as LinkOrderInput;
+    const result = await orderService.createLinkOrder(payload);
+    res.status(HttpCode.CREATED).json({
+      success: true,
+      message: "Order created successfully",
+      data: result,
+    });
+  } catch (err) {
+    console.log("Error, createLinkOrder:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
     else res.status(Errors.standard.code).json(Errors.standard);
   }

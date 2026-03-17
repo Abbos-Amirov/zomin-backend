@@ -4,6 +4,11 @@ export enum OrderType {
   TAKEOUT="TAKEOUT",
 }
 
+export enum OrderSource {
+  QR = "QR",
+  LINK = "LINK",
+}
+
 export enum OrderStatus {
   PAUSE="PAUSE",
   PENDING="PENDING",
