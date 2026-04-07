@@ -7,6 +7,8 @@ export interface Table {
   tableNumber: string;
   qrToken: string;
   tableStatus: TableStatus;
+  /** Stol turi — ixtiyoriy matn (masalan TABLE, ROOM, VIP) */
+  tableKind?: string;
   tableCall: TableCall;
   activeIdentifier: string;
   createdAt: Date;
@@ -17,6 +19,7 @@ export interface TableInput {
   tableNumber: string;
   qrToken?: string;
   tableStatus?: TableStatus;
+  tableKind?: string;
 }
 
 export interface TableUpdateInput {
@@ -24,6 +27,7 @@ export interface TableUpdateInput {
   tableNumber?: string;
   qrToken?: string;
   tableStatus?: TableStatus;
+  tableKind?: string;
   tableCall?: TableCall;
   activeIdentifier?: string | null;
 }
@@ -33,4 +37,6 @@ export interface TableInquiry {
   limit: number;
   status?: string;
   search?: string;
+  /** tableKind bo‘yicha filtr (ixtiyoriy string) */
+  kind?: string;
 }

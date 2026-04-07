@@ -93,8 +93,17 @@ export interface LinkOrderItemInput {
 }
 
 export interface LinkOrderInput {
-  restaurantId: string;
   tableId: string;
+  customerName: string;
+  customerPhone: string;
+  arrivalInMinutes: number;
+  orderItems: LinkOrderItemInput[];
+  /** Shu yerda stolda yeyish (`TABLE`) yoki olib ketish (`TAKEOUT`). Yuborilmasa `TABLE`. */
+  orderType?: OrderType;
+}
+
+/** Stol raqami/tablesiz, faqat olib ketish — `/order/link-takeout` */
+export interface LinkTakeoutOrderInput {
   customerName: string;
   customerPhone: string;
   arrivalInMinutes: number;

@@ -15,6 +15,8 @@ import {
   TodayIncomeAndAOV,
   TopSellingItems,
   LinkOrderInput,
+  LinkOrderItemInput,
+  LinkTakeoutOrderInput,
 } from "../libs/types/order";
 import { shapeIntoMongooseObjectId } from "../libs/config";
 import Errors, { HttpCode, Message } from "../libs/Errors";
@@ -133,37 +135,16 @@ class OrderService {
     console.log("orderItemsState", orderItemsState);
   }
 
-  /** LINK ORDER (no auth, customer enters via normal link) */
-  public async createLinkOrder(payload: LinkOrderInput): Promise<Order> {
-    const {
-      restaurantId,
-      tableId,
-      customerName,
-      customerPhone,
-      arrivalInMinutes,
-      orderItems,
-    } = payload;
-
+  private async buildNormalizedLinkItems(
+    orderItems: LinkOrderItemInput[]
+  ): Promise<{ normalizedItems: OrderItemInput[]; amount: number }> {
     if (
-      !restaurantId ||
-      !tableId ||
-      !customerName ||
-      !customerPhone ||
-      typeof arrivalInMinutes !== "number" ||
-      arrivalInMinutes <= 0 ||
       !orderItems ||
       !Array.isArray(orderItems) ||
       orderItems.length === 0
     ) {
       throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
     }
-
-    await this.memberService.getRestaurantById(restaurantId);
-
-    const tableObjectId = shapeIntoMongooseObjectId(tableId);
-    const table = await TableModel.findById(tableObjectId).exec();
-    if (!table) throw new Errors(HttpCode.NOT_FOUND, Message.NOT_TABLE);
-
     const productIds = orderItems.map((i) =>
       shapeIntoMongooseObjectId(i.productId)
     );
@@ -197,19 +178,105 @@ class OrderService {
         productId: pid,
       });
     }
+    return { normalizedItems, amount };
+  }
+
+  /** LINK ORDER (no auth, customer enters via normal link) */
+  public async createLinkOrder(payload: LinkOrderInput): Promise<Order> {
+    const {
+      tableId,
+      customerName,
+      customerPhone,
+      arrivalInMinutes,
+      orderItems,
+      orderType: linkOrderTypeInput,
+    } = payload;
+
+    const linkOrderType =
+      linkOrderTypeInput !== undefined && linkOrderTypeInput !== null
+        ? linkOrderTypeInput
+        : OrderType.TABLE;
+    if (
+      linkOrderType !== OrderType.TABLE &&
+      linkOrderType !== OrderType.TAKEOUT
+    ) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
+
+    if (
+      !tableId ||
+      !customerName ||
+      !customerPhone ||
+      typeof arrivalInMinutes !== "number" ||
+      arrivalInMinutes <= 0 ||
+      !orderItems ||
+      !Array.isArray(orderItems) ||
+      orderItems.length === 0
+    ) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
+
+    const tableObjectId = shapeIntoMongooseObjectId(tableId);
+    const table = await TableModel.findById(tableObjectId).exec();
+    if (!table) throw new Errors(HttpCode.NOT_FOUND, Message.NOT_TABLE);
+
+    const { normalizedItems, amount } = await this.buildNormalizedLinkItems(
+      orderItems
+    );
 
     const orderDelivery = 0;
     const orderInput: OrderInput = {
-      orderType: OrderType.TABLE,
+      orderType: linkOrderType,
       orderStatus: OrderStatus.PENDING,
       orderTotal: amount,
       orderDelivery,
-      restaurantId: shapeIntoMongooseObjectId(restaurantId),
       tableId: tableObjectId,
       customerName,
       customerPhone,
       arrivalInMinutes,
       orderSource: OrderSource.LINK,
+      paymentStatus: PaymentStatus.UNPAID,
+    };
+
+    const newOrderDoc = await this.orderModel.create(orderInput);
+    const orderId = newOrderDoc._id as ObjectId;
+    await this.recordOrderItem(orderId, normalizedItems);
+
+    const plainOrder = newOrderDoc.toObject() as Order;
+    (plainOrder as any).orderItems = normalizedItems;
+    return plainOrder;
+  }
+
+  /** Stolsiz link: faqat olib ketish (`TAKEOUT`), `tableId` yo‘q */
+  public async createLinkTakeoutOrder(
+    payload: LinkTakeoutOrderInput
+  ): Promise<Order> {
+    const { customerName, customerPhone, arrivalInMinutes, orderItems } =
+      payload;
+
+    if (
+      !customerName ||
+      !customerPhone ||
+      typeof arrivalInMinutes !== "number" ||
+      arrivalInMinutes <= 0
+    ) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
+
+    const { normalizedItems, amount } = await this.buildNormalizedLinkItems(
+      orderItems
+    );
+
+    const orderDelivery = 0;
+    const orderInput: OrderInput = {
+      orderType: OrderType.TAKEOUT,
+      orderStatus: OrderStatus.PENDING,
+      orderTotal: amount,
+      orderDelivery,
+      customerName,
+      customerPhone,
+      arrivalInMinutes,
+      orderSource: OrderSource.LINK_TAKEOUT,
       paymentStatus: PaymentStatus.UNPAID,
     };
 
@@ -432,10 +499,12 @@ class OrderService {
     return result;
   }
 
-  /** LINK source buyurtmalar (POST /order/link orqali yaratilgan) — admin uchun */
+  /** LINK + LINK_TAKEOUT buyurtmalar — admin uchun */
   public async getLinkOrders(inquiry?: OrderInquiry): Promise<Order[]> {
     const match: T = {
-      orderSource: OrderSource.LINK,
+      orderSource: {
+        $in: [OrderSource.LINK, OrderSource.LINK_TAKEOUT],
+      },
       orderStatus: { $ne: OrderStatus.PAUSE },
     };
     const page = Math.max(1, Number(inquiry?.page) || 1);

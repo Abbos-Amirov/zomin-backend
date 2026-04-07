@@ -1,4 +1,4 @@
-import { ObjectId } from "mongoose";
+import { ObjectId, type PipelineStage } from "mongoose";
 import { T } from "../libs/types/common";
 import { shapeIntoMongooseObjectId } from "../libs/config";
 import Errors, { HttpCode, Message } from "../libs/Errors";
@@ -25,29 +25,63 @@ class TableService {
     this.notifService = new NotifService();
   }
 
-  public async getAllTables(inquiry: TableInquiry): Promise<Table[]> {
+  public async getAllTables(
+    inquiry: TableInquiry,
+    options?: { omitSensitive?: boolean }
+  ): Promise<Table[]> {
     const match: T = {};
 
     if (inquiry.status) match.tableStatus = inquiry.status;
+
+    if (inquiry.kind) {
+      const k = String(inquiry.kind).trim();
+      if (k === "TABLE") {
+        match.$or = [
+          { tableKind: "TABLE" },
+          { tableKind: { $exists: false } },
+        ];
+      } else {
+        match.tableKind = k;
+      }
+    }
 
     if (inquiry.search) {
       match.tableNumber = { $regex: new RegExp(inquiry.search, "i") };
     }
 
-    const result = await this.tableModel
-      .aggregate([
-        { $match: match },
-        { $sort: { createdAt: 1 } },
-        { $skip: (inquiry.page - 1) * inquiry.limit },
-        { $limit: inquiry.limit },
-      ])
-      .exec();
+    const page = Math.max(1, Number(inquiry.page) || 1);
+    const limit = Math.min(500, Math.max(1, Number(inquiry.limit) || 50));
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      {
+        $addFields: {
+          tableKind: { $ifNull: ["$tableKind", "TABLE"] },
+        },
+      },
+      { $sort: { createdAt: 1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+    ];
+    if (options?.omitSensitive) {
+      pipeline.push({
+        $project: { qrToken: 0, activeIdentifier: 0 },
+      });
+    }
+
+    const result = await this.tableModel.aggregate(pipeline).exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
     return result;
   }
 
   public async createNewTable(input: TableInput): Promise<Table> {
     input.qrToken = Math.random().toString(36).substring(2, 10);
+    const raw = input.tableKind;
+    if (raw == null || String(raw).trim() === "") {
+      input.tableKind = "TABLE";
+    } else {
+      input.tableKind = String(raw).trim();
+    }
     try {
       const result = await this.tableModel.create(input);
       return result;

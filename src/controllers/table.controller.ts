@@ -47,19 +47,45 @@ tableController.verifyTable = async (
 tableController.getAllTables = async (req: Request, res: Response) => {
   try {
     console.log("getAllTables");
-    const { page, status, search, limit } = req.query;
+    const { page, status, search, limit, kind } = req.query;
     const inquiry: TableInquiry = {
       page: Number(page),
       limit: Number(limit),
     };
     if (status) inquiry.status = String(status);
     if (search) inquiry.search = String(search);
+    if (kind) inquiry.kind = String(kind);
 
     const data = await tableService.getAllTables(inquiry);
 
     res.status(HttpCode.OK).json(data);
   } catch (err) {
     console.log("Error, getAllTables:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/** Public: stollar ro‘yxati (qrToken / activeIdentifier yo‘q) */
+tableController.getPublicTables = async (req: Request, res: Response) => {
+  try {
+    console.log("getPublicTables");
+    const { page, status, search, limit, kind } = req.query;
+    const inquiry: TableInquiry = {
+      page: Number(page),
+      limit: Number(limit),
+    };
+    if (status) inquiry.status = String(status);
+    if (search) inquiry.search = String(search);
+    if (kind) inquiry.kind = String(kind);
+
+    const data = await tableService.getAllTables(inquiry, {
+      omitSensitive: true,
+    });
+
+    res.status(HttpCode.OK).json(data);
+  } catch (err) {
+    console.log("Error, getPublicTables:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
     else res.status(Errors.standard.code).json(Errors.standard);
   }

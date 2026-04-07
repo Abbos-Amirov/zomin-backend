@@ -22,6 +22,12 @@ const tableSchema = new Schema(
       default: TableStatus.CLEANING,
     },
 
+    /** Ixtiyoriy matn (frontend tanlovi); default TABLE */
+    tableKind: {
+      type: String,
+      default: "TABLE",
+    },
+
     tableCall: {
       type: String,
       enum: TableCall,

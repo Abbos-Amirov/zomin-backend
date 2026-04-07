@@ -7,6 +7,8 @@ export enum OrderType {
 export enum OrderSource {
   QR = "QR",
   LINK = "LINK",
+  /** Stolsiz link orqali olib ketish buyurtmasi */
+  LINK_TAKEOUT = "LINK_TAKEOUT",
 }
 
 export enum OrderStatus {

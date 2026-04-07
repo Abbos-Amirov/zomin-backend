@@ -7,9 +7,11 @@ import app from "./app";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import OrderService from "./models/Order.service";
+import TableService from "./models/Table.service";
 
 const PORT = process.env.PORT ?? 3001;
 const orderService = new OrderService();
+const tableService = new TableService();
 
 const SOCKET_ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -55,6 +57,23 @@ mongoose
     ioInstance.on("connection", (socket) => {
       console.log(" Admin connected:", socket.id);
       socket.join("admins");
+
+      socket.on("subscribePublicTables", async () => {
+        socket.join("publicTables");
+        try {
+          const data = await tableService.getAllTables(
+            { page: 1, limit: 500 },
+            { omitSensitive: true }
+          );
+          socket.emit("tableAll", data);
+        } catch (e) {
+          console.error("tableAll initial emit error:", e);
+        }
+      });
+
+      socket.on("unsubscribePublicTables", () => {
+        socket.leave("publicTables");
+      });
     });
 
     httpServer.listen(PORT, () => {
@@ -73,6 +92,17 @@ mongoose
           ioInstance.to("admins").emit("linkOrders", linkOrders);
         } catch (e) {
           console.error("linkOrders emit error:", e);
+        }
+      }, 5000);
+      setInterval(async () => {
+        try {
+          const tables = await tableService.getAllTables(
+            { page: 1, limit: 500 },
+            { omitSensitive: true }
+          );
+          ioInstance.to("publicTables").emit("tableAll", tables);
+        } catch (e) {
+          console.error("tableAll emit error:", e);
         }
       }, 5000);
     });

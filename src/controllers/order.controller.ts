@@ -8,6 +8,7 @@ import {
   OrderStatis,
   OrderUpdateInput,
   LinkOrderInput,
+  LinkTakeoutOrderInput,
 } from "../libs/types/order";
 import {
   OrderStatus,
@@ -77,6 +78,24 @@ orderController.createLinkOrder = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.log("Error, createLinkOrder:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/** Stolsiz olib ketish buyurtmasi (link /order/link ga o‘xshash, faqat TAKEOUT) */
+orderController.createLinkTakeoutOrder = async (req: Request, res: Response) => {
+  try {
+    console.log("createLinkTakeoutOrder");
+    const payload = req.body as LinkTakeoutOrderInput;
+    const result = await orderService.createLinkTakeoutOrder(payload);
+    res.status(HttpCode.CREATED).json({
+      success: true,
+      message: "Order created successfully",
+      data: result,
+    });
+  } catch (err) {
+    console.log("Error, createLinkTakeoutOrder:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
     else res.status(Errors.standard.code).json(Errors.standard);
   }
