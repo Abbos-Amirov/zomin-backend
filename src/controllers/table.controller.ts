@@ -1,4 +1,5 @@
 import TableService from "../models/Table.service";
+import { emitTableStatusToClients } from "../socket/tableBroadcast";
 import { getIo } from "../server";
 import { T } from "../libs/types/common";
 import { NextFunction, Request, Response } from "express";
@@ -98,6 +99,8 @@ tableController.createNewTable = async (req: Request, res: Response) => {
     const input: TableInput = req.body,
       result = await tableService.createNewTable(input);
 
+    void emitTableStatusToClients().catch(() => {});
+
     res.status(HttpCode.CREATED).json(result);
   } catch (err) {
     console.log("Error, createNewTable:", err);
@@ -116,6 +119,7 @@ tableController.updateChosenTable = async (req: Request, res: Response) => {
     if (input.tableStatus && input.tableStatus !== TableStatus.OCCUPIED)
       res.cookie("tableToken", null, { maxAge: 0, httpOnly: true });
     const result = await tableService.updateChosenTable(id, input);
+    void emitTableStatusToClients().catch(() => {});
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, updateChosenTable:", err);
@@ -129,6 +133,7 @@ tableController.deleteChosenTable = async (req: Request, res: Response) => {
     console.log("deleteChosenTable");
     const id = req.params.id;
     const result = await tableService.deleteChosenTable(id);
+    void emitTableStatusToClients().catch(() => {});
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, deleteChosenTable:", err);
@@ -149,6 +154,8 @@ tableController.qrLanding = async (req: Request, res: Response) => {
       maxAge: AUTH_TIMER_TABLE * 3600 * 1000,
       httpOnly: false,
     });
+
+    void emitTableStatusToClients().catch(() => {});
 
     res.status(HttpCode.CREATED).json({ table: result, tableToken: token });
   } catch (err) {
@@ -176,6 +183,8 @@ tableController.clickTableCall = async (req: Request, res: Response) => {
     } catch (ioErr) {
       console.log("Socket emit failed:", ioErr);
     }
+
+    void emitTableStatusToClients().catch(() => {});
 
     res.status(HttpCode.OK).json(result);
   } catch (err) {

@@ -29,8 +29,10 @@ import {
 } from "../libs/enums/order.enum";
 import { T } from "../libs/types/common";
 import { MemberType } from "../libs/enums/member.enum";
+import { TableStatus } from "../libs/enums/table.enum";
 import { Table } from "../libs/types/table";
 import { isMember, isTable } from "../libs/utils/validators";
+import { emitTableStatusToClients } from "../socket/tableBroadcast";
 import NotifService from "./Notif.service";
 import { NotifStatus, NotifType } from "../libs/enums/notif.enum";
 import { MessageNotif, Title } from "../libs/notif";
@@ -241,6 +243,14 @@ class OrderService {
     const newOrderDoc = await this.orderModel.create(orderInput);
     const orderId = newOrderDoc._id as ObjectId;
     await this.recordOrderItem(orderId, normalizedItems);
+
+    /** Shu yerda yeyish: tanlangan stolni band qilish (QR dagidek), AVAILABLE/CLEANING ham OCCUPIED */
+    if (linkOrderType === OrderType.TABLE) {
+      await TableModel.findByIdAndUpdate(tableObjectId, {
+        tableStatus: TableStatus.OCCUPIED,
+      }).exec();
+      void emitTableStatusToClients().catch(() => {});
+    }
 
     const plainOrder = newOrderDoc.toObject() as Order;
     (plainOrder as any).orderItems = normalizedItems;
@@ -502,6 +512,146 @@ class OrderService {
   /** LINK + LINK_TAKEOUT buyurtmalar — admin uchun */
   public async getLinkOrders(inquiry?: OrderInquiry): Promise<Order[]> {
     const match: T = {
+      orderSource: {
+        $in: [OrderSource.LINK, OrderSource.LINK_TAKEOUT],
+      },
+      orderStatus: { $ne: OrderStatus.PAUSE },
+    };
+    const page = Math.max(1, Number(inquiry?.page) || 1);
+    const limit = Math.min(500, Math.max(1, Number(inquiry?.limit) || 50));
+
+    const result = await this.orderModel
+      .aggregate([
+        { $match: match },
+        { $sort: { createdAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: "tables",
+            localField: "tableId",
+            foreignField: "_id",
+            as: "tableData",
+          },
+        },
+        {
+          $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "memberData",
+          },
+        },
+        {
+          $lookup: {
+            from: "orderItems",
+            localField: "_id",
+            foreignField: "orderId",
+            as: "orderItems",
+          },
+        },
+        {
+          $lookup: {
+            from: "products",
+            localField: "orderItems.productId",
+            foreignField: "_id",
+            as: "productData",
+          },
+        },
+        {
+          $addFields: {
+            tableNumber: { $arrayElemAt: ["$tableData.tableNumber", 0] },
+            memberNick: { $arrayElemAt: ["$memberData.memberNick", 0] },
+          },
+        },
+        {
+          $project: {
+            tableData: 0,
+            memberData: 0,
+          },
+        },
+      ])
+      .exec();
+    return result || [];
+  }
+
+  /**
+   * Admin: faqat `/order/link` + `orderType: TABLE` (o‘tirib yeyish), `LINK_TAKEOUT` emas
+   */
+  public async getLinkOrdersDineInAdmin(
+    inquiry?: OrderInquiry
+  ): Promise<Order[]> {
+    const match: T = {
+      orderSource: OrderSource.LINK,
+      orderType: OrderType.TABLE,
+      orderStatus: { $ne: OrderStatus.PAUSE },
+    };
+    const page = Math.max(1, Number(inquiry?.page) || 1);
+    const limit = Math.min(500, Math.max(1, Number(inquiry?.limit) || 50));
+
+    const result = await this.orderModel
+      .aggregate([
+        { $match: match },
+        { $sort: { createdAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: "tables",
+            localField: "tableId",
+            foreignField: "_id",
+            as: "tableData",
+          },
+        },
+        {
+          $lookup: {
+            from: "members",
+            localField: "memberId",
+            foreignField: "_id",
+            as: "memberData",
+          },
+        },
+        {
+          $lookup: {
+            from: "orderItems",
+            localField: "_id",
+            foreignField: "orderId",
+            as: "orderItems",
+          },
+        },
+        {
+          $lookup: {
+            from: "products",
+            localField: "orderItems.productId",
+            foreignField: "_id",
+            as: "productData",
+          },
+        },
+        {
+          $addFields: {
+            tableNumber: { $arrayElemAt: ["$tableData.tableNumber", 0] },
+            memberNick: { $arrayElemAt: ["$memberData.memberNick", 0] },
+          },
+        },
+        {
+          $project: {
+            tableData: 0,
+            memberData: 0,
+          },
+        },
+      ])
+      .exec();
+    return result || [];
+  }
+
+  /**
+   * Admin: olib ketish — `/order/link` (`TAKEOUT`) va `/order/link-takeout` (`LINK_TAKEOUT`)
+   */
+  public async getLinkOrdersTakeoutAdmin(
+    inquiry?: OrderInquiry
+  ): Promise<Order[]> {
+    const match: T = {
+      orderType: OrderType.TAKEOUT,
       orderSource: {
         $in: [OrderSource.LINK, OrderSource.LINK_TAKEOUT],
       },

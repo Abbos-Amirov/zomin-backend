@@ -91,6 +91,16 @@ routerAdmin.get(
   orderController.getAllOrdersPanel
 );
 routerAdmin.get(
+  "/order/link/dine-in",
+  // adminController.verifyAdmin,
+  orderController.getLinkOrdersDineInAdmin
+);
+routerAdmin.get(
+  "/order/link/takeout",
+  // adminController.verifyAdmin,
+  orderController.getLinkOrdersTakeoutAdmin
+);
+routerAdmin.get(
   "/order/link",
   // adminController.verifyAdmin,
   orderController.getLinkOrders

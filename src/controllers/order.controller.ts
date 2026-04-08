@@ -246,4 +246,46 @@ orderController.getLinkOrders = async (req: Request, res: Response) => {
   }
 };
 
+/** Admin: faqat `/order/link` + o‘tirib yeyish (`TABLE`) */
+orderController.getLinkOrdersDineInAdmin = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    console.log("getLinkOrdersDineInAdmin");
+    const { page, limit } = req.query;
+    const inquiry: OrderInquiry = {
+      page: Number(page) || 1,
+      limit: Number(limit) || 50,
+    };
+    const data = await orderService.getLinkOrdersDineInAdmin(inquiry);
+    res.status(HttpCode.OK).json(data);
+  } catch (err) {
+    console.log("Error, getLinkOrdersDineInAdmin:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/** Admin: link orqali olib ketish (`TAKEOUT` + LINK / LINK_TAKEOUT) */
+orderController.getLinkOrdersTakeoutAdmin = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    console.log("getLinkOrdersTakeoutAdmin");
+    const { page, limit } = req.query;
+    const inquiry: OrderInquiry = {
+      page: Number(page) || 1,
+      limit: Number(limit) || 50,
+    };
+    const data = await orderService.getLinkOrdersTakeoutAdmin(inquiry);
+    res.status(HttpCode.OK).json(data);
+  } catch (err) {
+    console.log("Error, getLinkOrdersTakeoutAdmin:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 export default orderController;
