@@ -1,7 +1,9 @@
 import OrderService from "../models/Order.service";
+import { shapeIntoMongooseObjectId } from "../libs/config";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { T } from "../libs/types/common";
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { getIo } from "../server";
 import {
   OrderInquiry,
@@ -96,6 +98,91 @@ orderController.createLinkTakeoutOrder = async (req: Request, res: Response) => 
     });
   } catch (err) {
     console.log("Error, createLinkTakeoutOrder:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/**
+ * GET /orders/all-member — faqat login; `memberId` query ixtiyoriy, lekin JWT dagi user bilan bir xil bo‘lishi kerak
+ */
+orderController.getOrdersAllMember = async (
+  req: ExtendedRequest,
+  res: Response
+) => {
+  try {
+    console.log("getOrdersAllMember");
+    const selfId = String(req.member._id);
+    const qId = req.query.memberId ? String(req.query.memberId) : null;
+    if (qId && qId !== selfId) {
+      throw new Errors(HttpCode.FORBIDDEN, Message.MEMBER_ID_MISMATCH);
+    }
+
+    const { page, limit, orderStatus } = req.query;
+    const inquiry: OrderInquiry = {
+      page: Number(page),
+      limit: Number(limit),
+      orderStatus: orderStatus as OrderStatus,
+    };
+
+    const memberOid = shapeIntoMongooseObjectId(req.member._id);
+    const result = await orderService.getOrdersByMemberId(memberOid, inquiry);
+
+    res.status(HttpCode.OK).json(result);
+  } catch (err) {
+    console.log("Error, getOrdersAllMember:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/**
+ * POST|DELETE /admin/order/purge-by-member — admin cookie.
+ * Body yoki query: `memberId` (ixtiyoriy, lekin berilsa to‘g‘ri ObjectId) va/yoki `customerPhone`.
+ */
+orderController.deleteOrdersByMemberId = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const rawMember =
+      (typeof req.body?.memberId === "string" && req.body.memberId) ||
+      (typeof req.query.memberId === "string" && req.query.memberId) ||
+      "";
+    const rawPhone =
+      (typeof req.body?.customerPhone === "string" &&
+        req.body.customerPhone) ||
+      (typeof req.query.customerPhone === "string" &&
+        req.query.customerPhone) ||
+      "";
+
+    const memberTrimmed = rawMember.trim();
+    const phoneTrimmed = rawPhone.trim();
+
+    const hasMember = memberTrimmed.length > 0;
+    const hasPhone = phoneTrimmed.length > 0;
+
+    if (!hasMember && !hasPhone) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.PURGE_ORDERS_CRITERIA);
+    }
+    if (hasMember && !mongoose.Types.ObjectId.isValid(memberTrimmed)) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_MEMBER_ID);
+    }
+
+    const memberOid = hasMember
+      ? shapeIntoMongooseObjectId(memberTrimmed)
+      : undefined;
+    const result = await orderService.deleteOrdersByMemberOrPhone({
+      memberId: memberOid,
+      customerPhone: hasPhone ? phoneTrimmed : undefined,
+    });
+    res.status(HttpCode.OK).json({
+      success: true,
+      deletedOrders: result.deletedOrders,
+      deletedItems: result.deletedItems,
+    });
+  } catch (err) {
+    console.log("Error, deleteOrdersByMemberId:", err);
     if (err instanceof Errors) res.status(err.code).json(err);
     else res.status(Errors.standard.code).json(Errors.standard);
   }

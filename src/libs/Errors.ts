@@ -22,6 +22,9 @@ export enum Message {
   BLOCKED_USER = "You have been blocked, contact restaurant!",
   WRONG_PASSWORD = "Wrong password entered, please try again",
   NOT_AUTHENTICATED = "You are not authenticated, Please login first!",
+  MEMBER_ID_MISMATCH = "memberId does not match authenticated user",
+  INVALID_MEMBER_ID = "memberId is required or invalid",
+  PURGE_ORDERS_CRITERIA = "Provide valid memberId and/or customerPhone",
   NOT_TABLE = "No table found for this QR code",
   DUPLICATE_PRODUCT = "Bunday mahsulot (nom + o'lcham + hajm) allaqachon mavjud",
 }

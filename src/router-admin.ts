@@ -85,6 +85,16 @@ routerAdmin.get(
   // adminController.verifyAdmin,
   orderController.getAllOrders
 );
+routerAdmin.post(
+  "/order/purge-by-member",
+  
+  orderController.deleteOrdersByMemberId
+);
+routerAdmin.delete(
+  "/order/purge-by-member",
+  adminController.verifyAdmin,
+  orderController.deleteOrdersByMemberId
+);
 routerAdmin.get(
   "/orders/all/panel",
   // adminController.verifyAdmin,

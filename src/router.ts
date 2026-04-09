@@ -36,6 +36,11 @@ router
 
 /** Order */
 router
+  .get(
+    "/orders/all-member",
+    memberController.verifyMember,
+    orderController.getOrdersAllMember
+  )
   .post(
     "/order/create",
     memberController.verifyAuth,

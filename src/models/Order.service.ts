@@ -340,6 +340,90 @@ class OrderService {
     return result;
   }
 
+  /** `memberId` bo‘yicha buyurtmalar — `/orders/all-member` */
+  public async getOrdersByMemberId(
+    memberId: ObjectId,
+    inquiry: OrderInquiry
+  ): Promise<Order[]> {
+    const page = Math.max(1, Number(inquiry.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(inquiry.limit) || 20));
+
+    const match: T = { memberId };
+    if (inquiry.orderStatus) match.orderStatus = inquiry.orderStatus;
+
+    const result = await this.orderModel
+      .aggregate([
+        { $match: match },
+        { $sort: { createdAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: "orderItems",
+            localField: "_id",
+            foreignField: "orderId",
+            as: "orderItems",
+          },
+        },
+        {
+          $lookup: {
+            from: "products",
+            localField: "orderItems.productId",
+            foreignField: "_id",
+            as: "productData",
+          },
+        },
+      ])
+      .exec();
+    return result || [];
+  }
+
+  /**
+   * `memberId` va/yoki `customerPhone` bo‘yicha buyurtmalar va `orderItems`.
+   * Ikkalasi berilsa — `$or` (birlashtirilgan to‘plam).
+   */
+  public async deleteOrdersByMemberOrPhone(criteria: {
+    memberId?: ObjectId;
+    customerPhone?: string;
+  }): Promise<{
+    deletedOrders: number;
+    deletedItems: number;
+  }> {
+    const { memberId, customerPhone } = criteria;
+    const hasMember = !!memberId;
+    const hasPhone = !!customerPhone && customerPhone.length > 0;
+    if (!hasMember && !hasPhone) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.PURGE_ORDERS_CRITERIA);
+    }
+
+    const match: T =
+      hasMember && hasPhone
+        ? { $or: [{ memberId }, { customerPhone }] }
+        : hasMember
+          ? { memberId }
+          : { customerPhone };
+
+    const orders = await this.orderModel
+      .find(match)
+      .select("_id")
+      .lean()
+      .exec();
+    const orderIds = orders.map((o) => o._id);
+    if (orderIds.length === 0) {
+      return { deletedOrders: 0, deletedItems: 0 };
+    }
+    const itemResult = await this.orderItemModel.deleteMany({
+      orderId: { $in: orderIds },
+    });
+    const orderResult = await this.orderModel.deleteMany({
+      _id: { $in: orderIds },
+    });
+    return {
+      deletedOrders: orderResult.deletedCount ?? 0,
+      deletedItems: itemResult.deletedCount ?? 0,
+    };
+  }
+
   public async updateOrder(
     member: Member | null,
     table: Table | null,

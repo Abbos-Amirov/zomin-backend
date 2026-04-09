@@ -38,6 +38,7 @@ app.use((req, res, next) => {
   if (req.path.startsWith('/member/') || 
       req.path.startsWith('/product/') || 
       req.path.startsWith('/order/') || 
+      req.path.startsWith('/orders/') || 
       req.path.startsWith('/table/') ||
       req.path.startsWith('/admin/')) {
     res.status(404).json({ error: 'API endpoint not found' });
