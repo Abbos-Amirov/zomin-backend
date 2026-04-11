@@ -87,17 +87,20 @@ routerAdmin.get(
 );
 routerAdmin.post(
   "/order/purge-by-member",
-  
   orderController.deleteOrdersByMemberId
+);
+routerAdmin.post(
+  "/order/purge-by-table",
+  orderController.deleteOrdersByTableId
 );
 routerAdmin.delete(
-  "/order/purge-by-member",
-  adminController.verifyAdmin,
-  orderController.deleteOrdersByMemberId
+  "/order/purge-by-table",
+  orderController.deleteOrdersByTableId
 );
+
 routerAdmin.get(
   "/orders/all/panel",
-  // adminController.verifyAdmin,
+ // adminController.verifyAdmin,
   orderController.getAllOrdersPanel
 );
 routerAdmin.get(

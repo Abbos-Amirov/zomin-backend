@@ -188,6 +188,31 @@ orderController.deleteOrdersByMemberId = async (
   }
 };
 
+/** POST|DELETE /admin/order/purge-by-table — body yoki query `tableId` */
+orderController.deleteOrdersByTableId = async (req: Request, res: Response) => {
+  try {
+    const raw =
+      (typeof req.body?.tableId === "string" && req.body.tableId) ||
+      (typeof req.query.tableId === "string" && req.query.tableId) ||
+      "";
+    const trimmed = raw.trim();
+    if (!trimmed || !mongoose.Types.ObjectId.isValid(trimmed)) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_TABLE_ID);
+    }
+    const tableOid = shapeIntoMongooseObjectId(trimmed);
+    const result = await orderService.deleteOrdersByTableId(tableOid);
+    res.status(HttpCode.OK).json({
+      success: true,
+      deletedOrders: result.deletedOrders,
+      deletedItems: result.deletedItems,
+    });
+  } catch (err) {
+    console.log("Error, deleteOrdersByTableId:", err);
+    if (err instanceof Errors) res.status(err.code).json(err);
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 orderController.getMyOrders = async (req: ExtendedRequest, res: Response) => {
   try {
     console.log("getMyOrders");

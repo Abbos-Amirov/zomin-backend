@@ -27,7 +27,6 @@ export interface TableUpdateInput {
   tableNumber?: string;
   qrToken?: string;
   tableStatus?: TableStatus;
-  tableKind?: string;
   tableCall?: TableCall;
   activeIdentifier?: string | null;
 }

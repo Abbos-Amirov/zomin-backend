@@ -424,6 +424,32 @@ class OrderService {
     };
   }
 
+  /** `tableId` ga bog‘langan barcha buyurtmalar va ularning `orderItems` */
+  public async deleteOrdersByTableId(tableId: ObjectId): Promise<{
+    deletedOrders: number;
+    deletedItems: number;
+  }> {
+    const orders = await this.orderModel
+      .find({ tableId })
+      .select("_id")
+      .lean()
+      .exec();
+    const orderIds = orders.map((o) => o._id);
+    if (orderIds.length === 0) {
+      return { deletedOrders: 0, deletedItems: 0 };
+    }
+    const itemResult = await this.orderItemModel.deleteMany({
+      orderId: { $in: orderIds },
+    });
+    const orderResult = await this.orderModel.deleteMany({
+      _id: { $in: orderIds },
+    });
+    return {
+      deletedOrders: orderResult.deletedCount ?? 0,
+      deletedItems: itemResult.deletedCount ?? 0,
+    };
+  }
+
   public async updateOrder(
     member: Member | null,
     table: Table | null,
@@ -524,15 +550,25 @@ class OrderService {
     return result;
   }
 
+  /**
+   * Admin panel: `orderType` i `TABLE` yoki `TAKEOUT` bo‘lgan buyurtmalar qaytarilmaydi.
+   */
   public async getAllOrdersPanel(inquiry: OrderInquiry): Promise<Order[]> {
-    const match: T = { orderStatus: { $ne: OrderStatus.PAUSE } };
+    const andClauses: T[] = [
+      { orderStatus: { $ne: OrderStatus.PAUSE } },
+      { orderType: { $nin: [OrderType.TABLE, OrderType.TAKEOUT] } },
+    ];
 
-    if (inquiry.payStatus) match.paymentStatus = inquiry.payStatus;
-    if (inquiry.payMeth) match.paymentMethod = inquiry.payMeth;
-    if (inquiry.status) match.orderStatus = inquiry.status;
-    if (inquiry.type) match.orderType = inquiry.type;
+    if (inquiry.payStatus) andClauses.push({ paymentStatus: inquiry.payStatus });
+    if (inquiry.payMeth) andClauses.push({ paymentMethod: inquiry.payMeth });
+    if (inquiry.status) andClauses.push({ orderStatus: inquiry.status });
+    if (inquiry.type) andClauses.push({ orderType: inquiry.type });
     if (inquiry.search)
-      match.orderType = { $regex: new RegExp(inquiry.search, "i") };
+      andClauses.push({
+        orderType: { $regex: new RegExp(inquiry.search, "i") },
+      });
+
+    const match: T = { $and: andClauses };
 
     const page = Math.max(1, Number(inquiry.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(inquiry.limit) || 10));

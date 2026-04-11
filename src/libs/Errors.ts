@@ -25,6 +25,7 @@ export enum Message {
   MEMBER_ID_MISMATCH = "memberId does not match authenticated user",
   INVALID_MEMBER_ID = "memberId is required or invalid",
   PURGE_ORDERS_CRITERIA = "Provide valid memberId and/or customerPhone",
+  INVALID_TABLE_ID = "tableId is required or invalid",
   NOT_TABLE = "No table found for this QR code",
   DUPLICATE_PRODUCT = "Bunday mahsulot (nom + o'lcham + hajm) allaqachon mavjud",
 }

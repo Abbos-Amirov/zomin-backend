@@ -96,17 +96,25 @@ class TableService {
     input: TableUpdateInput
   ): Promise<Table> {
     const tableId = shapeIntoMongooseObjectId(id);
-    if (input.tableStatus)
+    const {
+      tableKind: _dropKind,
+      table_kind: _dropKindSnake,
+      ...update
+    } = input as TableUpdateInput & {
+      tableKind?: string;
+      table_kind?: string;
+    };
+    if (update.tableStatus)
       // every new clients new activeIdentifier
-      input.activeIdentifier = null;
-    if (input.tableCall)
+      update.activeIdentifier = null;
+    if (update.tableCall)
       await this.notifService.updateCallNotif(tableId, {
         message: MessageNotif.TABLE_CALL_UPDATE,
         notifStatus: NotifStatus.READ,
       });
-    console.log("input: updateChosenTable:", input);
+    console.log("input: updateChosenTable:", update);
     const result = await this.tableModel
-      .findByIdAndUpdate({ _id: id }, input, { new: true })
+      .findByIdAndUpdate({ _id: id }, update, { new: true })
       .exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.UPDATE_FAILED);
     return result;
