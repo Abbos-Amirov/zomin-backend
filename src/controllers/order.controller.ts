@@ -62,7 +62,7 @@ orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
       stack: err instanceof Error ? err.stack : undefined,
       client: req.member ? 'member' : req.table ? 'table' : 'none'
     });
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -80,7 +80,7 @@ orderController.createLinkOrder = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.log("Error, createLinkOrder:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -98,25 +98,22 @@ orderController.createLinkTakeoutOrder = async (req: Request, res: Response) => 
     });
   } catch (err) {
     console.log("Error, createLinkTakeoutOrder:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
 
 /**
- * GET /orders/all-member — faqat login; `memberId` query ixtiyoriy, lekin JWT dagi user bilan bir xil bo‘lishi kerak
+ * GET /orders/all-member — cookie kerak emas; `memberId` query (majburiy, ObjectId).
  */
-orderController.getOrdersAllMember = async (
-  req: ExtendedRequest,
-  res: Response
-) => {
+orderController.getOrdersAllMember = async (req: Request, res: Response) => {
   try {
     console.log("getOrdersAllMember");
-    const selfId = String(req.member._id);
-    const qId = req.query.memberId ? String(req.query.memberId) : null;
-    if (qId && qId !== selfId) {
-      throw new Errors(HttpCode.FORBIDDEN, Message.MEMBER_ID_MISMATCH);
+    const raw = req.query.memberId ? String(req.query.memberId).trim() : "";
+    if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_MEMBER_ID);
     }
+    const memberOid = shapeIntoMongooseObjectId(raw);
 
     const { page, limit, orderStatus } = req.query;
     const inquiry: OrderInquiry = {
@@ -125,13 +122,12 @@ orderController.getOrdersAllMember = async (
       orderStatus: orderStatus as OrderStatus,
     };
 
-    const memberOid = shapeIntoMongooseObjectId(req.member._id);
     const result = await orderService.getOrdersByMemberId(memberOid, inquiry);
 
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getOrdersAllMember:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -183,7 +179,7 @@ orderController.deleteOrdersByMemberId = async (
     });
   } catch (err) {
     console.log("Error, deleteOrdersByMemberId:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -208,7 +204,7 @@ orderController.deleteOrdersByTableId = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.log("Error, deleteOrdersByTableId:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -232,7 +228,7 @@ orderController.getMyOrders = async (req: ExtendedRequest, res: Response) => {
     res.status(HttpCode.CREATED).json(result);
   } catch (err) {
     console.log("Error, getMyOrders:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -246,7 +242,7 @@ orderController.updateOrder = async (req: ExtendedRequest, res: Response) => {
     res.status(HttpCode.CREATED).json(result);
   } catch (err) {
     console.log("Error, updateOrder:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -270,7 +266,7 @@ orderController.getAllOrders = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(data);
   } catch (err) {
     console.log("Error, getAllOrders:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -293,7 +289,29 @@ orderController.getAllOrdersPanel = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(data);
   } catch (err) {
     console.log("Error, getAllOrdersPanel:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/** POST /admin/order/:id/notify-accepted-sms — mijozga “buyurtma qabul qilindi” SMS */
+orderController.notifyOrderAcceptedSms = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const id = req.params.id;
+    if (!id) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
+    }
+    await orderService.sendOrderAcceptedSms(id);
+    res.status(HttpCode.OK).json({
+      success: true,
+      message: "SMS sent",
+    });
+  } catch (err) {
+    console.log("Error, notifyOrderAcceptedSms:", err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -308,7 +326,7 @@ orderController.updateChosenOrder = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, updateChosenOrder:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -321,7 +339,7 @@ orderController.getOrderStatis = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getOrderStatis:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -336,7 +354,7 @@ orderController.completeTableOrders = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, completeTableOrders:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -353,7 +371,7 @@ orderController.getLinkOrders = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(data);
   } catch (err) {
     console.log("Error, getLinkOrders:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -374,7 +392,7 @@ orderController.getLinkOrdersDineInAdmin = async (
     res.status(HttpCode.OK).json(data);
   } catch (err) {
     console.log("Error, getLinkOrdersDineInAdmin:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -395,7 +413,7 @@ orderController.getLinkOrdersTakeoutAdmin = async (
     res.status(HttpCode.OK).json(data);
   } catch (err) {
     console.log("Error, getLinkOrdersTakeoutAdmin:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };

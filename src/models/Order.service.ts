@@ -36,6 +36,25 @@ import { emitTableStatusToClients } from "../socket/tableBroadcast";
 import NotifService from "./Notif.service";
 import { NotifStatus, NotifType } from "../libs/enums/notif.enum";
 import { MessageNotif, Title } from "../libs/notif";
+import { sendTwilioSms } from "../libs/twilioSms";
+
+/** Link buyurtmalarda telefon formatlari farq qiladi — `$customerPhone` dan ajratuvchilarni olib tashlab raqamlarni solishtirish. */
+function customerPhoneDigitsEqualsExpr(memberDigits: string): T | null {
+  if (!memberDigits || memberDigits.length < 5) return null;
+  const chars = [" ", "\t", "-", "(", ")", "+", "."];
+  let input: any = { $ifNull: ["$customerPhone", ""] };
+  for (const ch of chars) {
+    input = { $replaceAll: { input, find: ch, replacement: "" } };
+  }
+  return {
+    $expr: {
+      $and: [
+        { $gte: [{ $strLenCP: input }, 5] },
+        { $eq: [input, memberDigits] },
+      ],
+    },
+  };
+}
 
 class OrderService {
   private readonly orderModel;
@@ -340,15 +359,37 @@ class OrderService {
     return result;
   }
 
-  /** `memberId` bo‘yicha buyurtmalar — `/orders/all-member` */
+  /**
+   * `memberId` bo‘yicha buyurtmalar — `/orders/all-member`.
+   * - `memberId` maydoni ObjectId yoki (eski yozuvlar) string bo‘lishi mumkin.
+   * - Link buyurtmalar: `customerPhone` — profil `memberPhone` bilan aniq yoki format farqi.
+   */
   public async getOrdersByMemberId(
     memberId: ObjectId,
     inquiry: OrderInquiry
   ): Promise<Order[]> {
     const page = Math.max(1, Number(inquiry.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(inquiry.limit) || 20));
+    const limit = Math.min(500, Math.max(1, Number(inquiry.limit) || 20));
 
-    const match: T = { memberId };
+    const idStr = String(memberId);
+    const orParts: T[] = [{ memberId }, { memberId: idStr }];
+
+    const phone = await this.memberService.getMemberPhoneById(memberId);
+    if (phone) {
+      const trimmed = phone.trim();
+      if (trimmed) {
+        orParts.push({ customerPhone: trimmed });
+        const digits = trimmed.replace(/\D/g, "");
+        if (digits.length >= 5) {
+          orParts.push({ customerPhone: digits });
+          orParts.push({ customerPhone: `+${digits}` });
+          const digitExpr = customerPhoneDigitsEqualsExpr(digits);
+          if (digitExpr) orParts.push(digitExpr);
+        }
+      }
+    }
+
+    const match: T = { $or: orParts };
     if (inquiry.orderStatus) match.orderStatus = inquiry.orderStatus;
 
     const result = await this.orderModel
@@ -375,7 +416,7 @@ class OrderService {
         },
       ])
       .exec();
-    return result || [];
+    return result ;
   }
 
   /**
@@ -900,6 +941,31 @@ class OrderService {
         notifStatus: NotifStatus.READ,
       });
     return result;
+  }
+
+  /**
+   * Admin: buyurtma mijoziga “qabul qilindi” SMS (Twilio).
+   * Telefon: `customerPhone`, bo‘lmasa `memberId` bo‘yicha `memberPhone`.
+   */
+  public async sendOrderAcceptedSms(orderId: string): Promise<void> {
+    const oid = shapeIntoMongooseObjectId(orderId);
+    const order = await this.orderModel.findById(oid).lean().exec();
+    if (!order) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    let phone: string | null =
+      typeof order.customerPhone === "string" && order.customerPhone.trim()
+        ? order.customerPhone.trim()
+        : null;
+    if (!phone && order.memberId) {
+      phone = await this.memberService.getMemberPhoneById(order.memberId);
+    }
+    if (!phone) throw new Errors(HttpCode.BAD_REQUEST, Message.SMS_NO_PHONE);
+
+    const body =
+      process.env.SMS_ORDER_ACCEPTED_TEXT?.trim() ||
+      "Hurmatli mijoz, sizning buyurtmangiz qabul qilindi.";
+
+    await sendTwilioSms(phone, body);
   }
 
   /** Stol bo‘yicha barcha buyurtmalarni yakunlash (PAID + COMPLETED) — bugungi daromadga kiradi */

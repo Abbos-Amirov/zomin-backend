@@ -29,7 +29,7 @@ adminController.getUsers = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getUsers:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -42,7 +42,7 @@ adminController.updateChosenUser = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, updateChosenUser:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -62,7 +62,7 @@ adminController.verifyAdmin = async (
     next();
   } catch (err) {
     console.log("Error, verifyAuth:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -76,7 +76,7 @@ adminController.getNotifications = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getNotifications:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };

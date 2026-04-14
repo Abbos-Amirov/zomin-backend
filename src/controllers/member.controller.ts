@@ -26,7 +26,7 @@ memberController.getRestaurant = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getRestaurant:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -50,7 +50,7 @@ memberController.signup = async (req: Request, res: Response) => {
     res.status(HttpCode.CREATED).json({ member: result });
   } catch (err) {
     console.log("Error, signup:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -75,7 +75,7 @@ memberController.login = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json({ member: result });
   } catch (err) {
     console.log("Error, login:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -94,7 +94,7 @@ memberController.logout = (req: ExtendedRequest, res: Response) => {
     res.status(HttpCode.OK).json({ logout: true });
   } catch (err) {
     console.log("Error, logout:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -110,7 +110,7 @@ memberController.getMemberDetail = async (
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getMemberDetail:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -125,7 +125,7 @@ memberController.updateMember = async (req: ExtendedRequest, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, updateMember:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -138,7 +138,7 @@ memberController.getTopUsers = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getTopUsers:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -161,7 +161,7 @@ memberController.verifyAuth = async (
     next();
   } catch (err) {
     console.log("Error, verifyAuth:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -181,7 +181,7 @@ memberController.verifyMember = async (
     next();
   } catch (err) {
     console.log("Error, verifyAuth:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };

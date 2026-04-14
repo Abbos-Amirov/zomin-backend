@@ -119,6 +119,10 @@ routerAdmin.get(
   orderController.getLinkOrders
 );
 routerAdmin.post(
+  "/order/:id/notify-accepted-sms",
+  orderController.notifyOrderAcceptedSms
+);
+routerAdmin.post(
   "/order/:id",
   // adminController.verifyAdmin,
   orderController.updateChosenOrder

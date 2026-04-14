@@ -86,6 +86,17 @@ class MemberService {
 
     return await this.memberModel.findById(member._id).lean().exec();
   }
+  public async getMemberPhoneById(memberId: string | object): Promise<string | null> {
+    const id = shapeIntoMongooseObjectId(memberId);
+    const doc = await this.memberModel
+      .findById(id)
+      .select("memberPhone")
+      .lean()
+      .exec();
+    const p = doc?.memberPhone;
+    return typeof p === "string" && p.trim() ? p.trim() : null;
+  }
+
   public async getMemberDetail(member: Member): Promise<Member> {
     const memberId = shapeIntoMongooseObjectId(member._id);
     const match: T = { id: memberId };

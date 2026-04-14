@@ -1,7 +1,9 @@
+import path from "path";
 import dotenv from "dotenv";
-dotenv.config({
-  path: process.env.NODE_ENV === "production" ? ".env.production" : ".env",
-});
+
+const envFile =
+  process.env.NODE_ENV === "production" ? ".env.production" : ".env";
+dotenv.config({ path: path.resolve(__dirname, "..", envFile) });
 import mongoose from "mongoose";
 import app from "./app";
 import { createServer } from "http";

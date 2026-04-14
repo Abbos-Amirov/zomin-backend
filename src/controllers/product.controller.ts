@@ -34,7 +34,7 @@ productController.getProducts = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getProducts:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -50,7 +50,7 @@ productController.getProduct = async (req: ExtendedRequest, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getProduct:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -88,7 +88,7 @@ productController.createNewProduct = async (
   } catch (err) {
     console.log("Error, createNewProduct:", err);
     if (err instanceof Errors) {
-      res.status(err.code).json(err);
+      res.status(err.code).json(err.toJSON());
     } else {
       const message = err instanceof Error ? err.message : Message.CREATE_FAILED;
       res.status(HttpCode.BAD_REQUEST).json({ code: HttpCode.BAD_REQUEST, message });
@@ -115,7 +115,7 @@ productController.getAllProducts = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getAllProducts:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -150,7 +150,7 @@ productController.updateChosenProduct = async (
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, updateChosenProduct:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -163,7 +163,7 @@ productController.getProductsStat = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, getProductsStat:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -176,7 +176,7 @@ productController.deleteChosenProduct = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, deleteChosenProduct:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -189,7 +189,7 @@ productController.toggleProductStatus = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, toggleProductStatus:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };

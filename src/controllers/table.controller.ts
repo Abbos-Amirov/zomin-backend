@@ -38,7 +38,7 @@ tableController.verifyTable = async (
     next();
   } catch (err) {
     console.log("Error, verifyTable:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -62,7 +62,7 @@ tableController.getAllTables = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(data);
   } catch (err) {
     console.log("Error, getAllTables:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -87,7 +87,7 @@ tableController.getPublicTables = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(data);
   } catch (err) {
     console.log("Error, getPublicTables:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -106,7 +106,7 @@ tableController.createNewTable = async (req: Request, res: Response) => {
     console.log("Error, createNewTable:", err);
     const message =
       err instanceof Errors ? err.message : Message.SOMETHING_WENT_WRONG;
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -123,7 +123,7 @@ tableController.updateChosenTable = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, updateChosenTable:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -137,7 +137,7 @@ tableController.deleteChosenTable = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, deleteChosenTable:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -160,7 +160,7 @@ tableController.qrLanding = async (req: Request, res: Response) => {
     res.status(HttpCode.CREATED).json({ table: result, tableToken: token });
   } catch (err) {
     console.log("Error, qrLanding:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -189,7 +189,7 @@ tableController.clickTableCall = async (req: Request, res: Response) => {
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, clickTableCall:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
@@ -201,7 +201,7 @@ tableController.TableLogout = (req: ExtendedRequest, res: Response) => {
     res.status(HttpCode.OK).json({ logout: true });
   } catch (err) {
     console.log("Error, TableLogout:", err);
-    if (err instanceof Errors) res.status(err.code).json(err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }
 };
