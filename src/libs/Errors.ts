@@ -42,6 +42,8 @@ export enum Message {
   PURGE_ORDERS_CRITERIA = "Provide valid memberId and/or customerPhone",
   INVALID_TABLE_ID = "tableId is required or invalid",
   NOT_TABLE = "No table found for this QR code",
+  TABLE_OCCUPIED_BY_ANOTHER =
+    "This table is taken by another guest. Please choose another table.",
   DUPLICATE_PRODUCT = "Bunday mahsulot (nom + o'lcham + hajm) allaqachon mavjud",
   TWILIO_NOT_CONFIGURED = "Twilio SMS is not configured (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER or TWILIO_PHONE_NUMBER)",
   SMS_NO_PHONE = "No phone number for this order",

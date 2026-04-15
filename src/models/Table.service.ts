@@ -9,12 +9,16 @@ import {
   TableUpdateInput,
 } from "../libs/types/table";
 import TableModel from "../schema/Table.model";
+import OrderModel from "../schema/Order.model";
 import { MemberType } from "../libs/enums/member.enum";
+import { OrderStatus, OrderType } from "../libs/enums/order.enum";
 import { TableStatus } from "../libs/enums/table.enum";
 import { TableCall } from "../libs/enums/tableCall.enum";
 import NotifService from "./Notif.service";
 import { NotifStatus, NotifType } from "../libs/enums/notif.enum";
 import { MessageNotif, Title } from "../libs/notif";
+import { Member } from "../libs/types/member";
+import { isSameGuestAsOrder } from "../libs/utils/orderTableGuest";
 
 class TableService {
   private readonly tableModel;
@@ -27,7 +31,7 @@ class TableService {
 
   public async getAllTables(
     inquiry: TableInquiry,
-    options?: { omitSensitive?: boolean }
+    options?: { omitSensitive?: boolean; viewerMember?: Member | null }
   ): Promise<Table[]> {
     const match: T = {};
 
@@ -71,6 +75,52 @@ class TableService {
 
     const result = await this.tableModel.aggregate(pipeline).exec();
     if (!result) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+    const viewer = options?.viewerMember ?? null;
+    for (const t of result as Table[]) {
+      const setSelectable = (v: boolean) => {
+        t.selectableForCurrentMember = v;
+        t.selectableByCurrentMember = v;
+      };
+
+      if (t.tableStatus !== TableStatus.OCCUPIED) {
+        t.occupiedByMe = false;
+        setSelectable(true);
+        continue;
+      }
+
+      const activeOrders = await OrderModel.find({
+        tableId: t._id,
+        orderType: OrderType.TABLE,
+        orderStatus: {
+          $nin: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
+        },
+      })
+        .lean()
+        .exec();
+
+      if (!viewer) {
+        t.occupiedByMe = false;
+        setSelectable(false);
+        continue;
+      }
+
+      if (!activeOrders.length) {
+        t.occupiedByMe = false;
+        setSelectable(true);
+        continue;
+      }
+
+      const allMine = activeOrders.every((o) =>
+        isSameGuestAsOrder(o, { viewer, requestPhone: null })
+      );
+      const anyMine = activeOrders.some((o) =>
+        isSameGuestAsOrder(o, { viewer, requestPhone: null })
+      );
+      t.occupiedByMe = anyMine;
+      setSelectable(allMine);
+    }
+
     return result;
   }
 

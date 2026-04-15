@@ -67,12 +67,18 @@ orderController.createOrder = async (req: ExtendedRequest, res: Response) => {
   }
 };
 
-/** LINK ORDER: customer comes from normal link (no auth) */
-orderController.createLinkOrder = async (req: Request, res: Response) => {
+/** LINK ORDER — ixtiyoriy cookie (retrieveAuth); band stolni o‘z buyurtmasi bilan qayta ishlatish. */
+orderController.createLinkOrder = async (
+  req: ExtendedRequest,
+  res: Response
+) => {
   try {
     console.log("createLinkOrder");
     const payload = req.body as LinkOrderInput;
-    const result = await orderService.createLinkOrder(payload);
+    const result = await orderService.createLinkOrder(
+      payload,
+      req.member ?? null
+    );
     res.status(HttpCode.CREATED).json({
       success: true,
       message: "Order created successfully",

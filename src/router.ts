@@ -43,7 +43,11 @@ router
     memberController.verifyAuth,
     orderController.createOrder
   )
-  .post("/order/link", orderController.createLinkOrder)
+  .post(
+    "/order/link",
+    memberController.retrieveAuth,
+    orderController.createLinkOrder
+  )
   .post("/order/link-takeout", orderController.createLinkTakeoutOrder)
   .get("/order/all", memberController.verifyAuth, orderController.getMyOrders)
   .patch(
@@ -58,7 +62,11 @@ router
 
 /** Table */
 router
-  .get("/table/all", tableController.getPublicTables)
+  .get(
+    "/table/all",
+    memberController.retrieveAuth,
+    tableController.getPublicTables
+  )
   .get("/table/qr/:id", tableController.qrLanding)
   .get(
     "/table/call/:id",

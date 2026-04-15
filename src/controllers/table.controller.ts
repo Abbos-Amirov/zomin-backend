@@ -67,8 +67,11 @@ tableController.getAllTables = async (req: Request, res: Response) => {
   }
 };
 
-/** Public: stollar ro‘yxati (qrToken / activeIdentifier yo‘q) */
-tableController.getPublicTables = async (req: Request, res: Response) => {
+/** Public: stollar ro‘yxati (qrToken / activeIdentifier yo‘q); retrieveAuth — occupiedByMe / selectableForCurrentMember */
+tableController.getPublicTables = async (
+  req: ExtendedRequest,
+  res: Response
+) => {
   try {
     console.log("getPublicTables");
     const { page, status, search, limit, kind } = req.query;
@@ -82,6 +85,7 @@ tableController.getPublicTables = async (req: Request, res: Response) => {
 
     const data = await tableService.getAllTables(inquiry, {
       omitSensitive: true,
+      viewerMember: req.member ?? null,
     });
 
     res.status(HttpCode.OK).json(data);

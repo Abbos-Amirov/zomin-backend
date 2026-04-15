@@ -32,6 +32,7 @@ import { MemberType } from "../libs/enums/member.enum";
 import { TableStatus } from "../libs/enums/table.enum";
 import { Table } from "../libs/types/table";
 import { isMember, isTable } from "../libs/utils/validators";
+import { isSameGuestAsOrder } from "../libs/utils/orderTableGuest";
 import { emitTableStatusToClients } from "../socket/tableBroadcast";
 import NotifService from "./Notif.service";
 import { NotifStatus, NotifType } from "../libs/enums/notif.enum";
@@ -202,8 +203,13 @@ class OrderService {
     return { normalizedItems, amount };
   }
 
-  /** LINK ORDER (no auth, customer enters via normal link) */
-  public async createLinkOrder(payload: LinkOrderInput): Promise<Order> {
+  /**
+   * LINK ORDER — `viewerMember` cookie (retrieveAuth) bo‘lsa, band stolni boshqa mijozdan ajratish.
+   */
+  public async createLinkOrder(
+    payload: LinkOrderInput,
+    viewerMember?: Member | null
+  ): Promise<Order> {
     const {
       tableId,
       customerName,
@@ -240,6 +246,33 @@ class OrderService {
     const tableObjectId = shapeIntoMongooseObjectId(tableId);
     const table = await TableModel.findById(tableObjectId).exec();
     if (!table) throw new Errors(HttpCode.NOT_FOUND, Message.NOT_TABLE);
+
+    if (linkOrderType === OrderType.TABLE) {
+      const activeOrders = await this.orderModel
+        .find({
+          tableId: tableObjectId,
+          orderType: OrderType.TABLE,
+          orderStatus: {
+            $nin: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
+          },
+        })
+        .lean()
+        .exec();
+
+      for (const o of activeOrders) {
+        if (
+          !isSameGuestAsOrder(o, {
+            viewer: viewerMember ?? null,
+            requestPhone: customerPhone,
+          })
+        ) {
+          throw new Errors(
+            HttpCode.FORBIDDEN,
+            Message.TABLE_OCCUPIED_BY_ANOTHER
+          );
+        }
+      }
+    }
 
     const { normalizedItems, amount } = await this.buildNormalizedLinkItems(
       orderItems

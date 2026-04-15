@@ -13,6 +13,12 @@ export interface Table {
   activeIdentifier: string;
   createdAt: Date;
   updatedAt: Date;
+  /** GET /table/all + retrieveAuth: bandlik shu a’zoning buyurtmasi bilan bog‘liqmi */
+  occupiedByMe?: boolean;
+  /** Joriy a’zo (cookie) uchun stolni qayta tanlash / yangi link buyurtma */
+  selectableForCurrentMember?: boolean;
+  /** `selectableForCurrentMember` bilan bir xil qiymat (frontend nomi) */
+  selectableByCurrentMember?: boolean;
 }
 
 export interface TableInput {
