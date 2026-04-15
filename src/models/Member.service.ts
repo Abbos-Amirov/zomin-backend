@@ -86,6 +86,12 @@ class MemberService {
 
     return await this.memberModel.findById(member._id).lean().exec();
   }
+  public async memberExistsById(memberId: string | object): Promise<boolean> {
+    const id = shapeIntoMongooseObjectId(memberId);
+    const doc = await this.memberModel.findById(id).select("_id").lean().exec();
+    return !!doc;
+  }
+
   public async getMemberPhoneById(memberId: string | object): Promise<string | null> {
     const id = shapeIntoMongooseObjectId(memberId);
     const doc = await this.memberModel

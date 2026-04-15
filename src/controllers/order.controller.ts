@@ -133,6 +133,54 @@ orderController.getOrdersAllMember = async (req: Request, res: Response) => {
 };
 
 /**
+ * POST /orders/cancel-by-member — `memberId` va `customerPhone` (query yoki body);
+ * telefon profil bilan mos bo‘lsa, shu memberga tegishli buyurtmalar va orderItems DB dan o‘chiriladi.
+ */
+orderController.cancelOrdersByMember = async (req: Request, res: Response) => {
+  try {
+    console.log("cancelOrdersByMember");
+    const fromQuery = req.query.memberId
+      ? String(req.query.memberId).trim()
+      : "";
+    const fromBody =
+      typeof req.body?.memberId === "string" ? req.body.memberId.trim() : "";
+    const raw = fromQuery || fromBody;
+    if (!raw || !mongoose.Types.ObjectId.isValid(raw)) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_MEMBER_ID);
+    }
+    const memberOid = shapeIntoMongooseObjectId(raw);
+
+    const phoneFromQuery = req.query.customerPhone
+      ? String(req.query.customerPhone).trim()
+      : "";
+    const phoneFromBody =
+      typeof req.body?.customerPhone === "string"
+        ? req.body.customerPhone.trim()
+        : "";
+    const customerPhone = phoneFromQuery || phoneFromBody;
+    if (!customerPhone) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CUSTOMER_PHONE_REQUIRED);
+    }
+
+    const result = await orderService.deleteOrdersByMemberVerifiedPhone(
+      memberOid,
+      customerPhone
+    );
+
+    res.status(HttpCode.OK).json({
+      success: true,
+      message: "Orders deleted",
+      deletedOrders: result.deletedOrders,
+      deletedItems: result.deletedItems,
+    });
+  } catch (err) {
+    console.log("Error, cancelOrdersByMember:", err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/**
  * POST|DELETE /admin/order/purge-by-member — admin cookie.
  * Body yoki query: `memberId` (ixtiyoriy, lekin berilsa to‘g‘ri ObjectId) va/yoki `customerPhone`.
  */

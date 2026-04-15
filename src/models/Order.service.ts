@@ -359,18 +359,8 @@ class OrderService {
     return result;
   }
 
-  /**
-   * `memberId` bo‘yicha buyurtmalar — `/orders/all-member`.
-   * - `memberId` maydoni ObjectId yoki (eski yozuvlar) string bo‘lishi mumkin.
-   * - Link buyurtmalar: `customerPhone` — profil `memberPhone` bilan aniq yoki format farqi.
-   */
-  public async getOrdersByMemberId(
-    memberId: ObjectId,
-    inquiry: OrderInquiry
-  ): Promise<Order[]> {
-    const page = Math.max(1, Number(inquiry.page) || 1);
-    const limit = Math.min(500, Math.max(1, Number(inquiry.limit) || 20));
-
+  /** `getOrdersByMemberId` / `deleteOrdersByMemberVerifiedPhone` uchun bir xil `$or` shartlari. */
+  private async buildMemberOrdersOrMatch(memberId: ObjectId): Promise<T[]> {
     const idStr = String(memberId);
     const orParts: T[] = [{ memberId }, { memberId: idStr }];
 
@@ -388,7 +378,22 @@ class OrderService {
         }
       }
     }
+    return orParts;
+  }
 
+  /**
+   * `memberId` bo‘yicha buyurtmalar — `/orders/all-member`.
+   * - `memberId` maydoni ObjectId yoki (eski yozuvlar) string bo‘lishi mumkin.
+   * - Link buyurtmalar: `customerPhone` — profil `memberPhone` bilan aniq yoki format farqi.
+   */
+  public async getOrdersByMemberId(
+    memberId: ObjectId,
+    inquiry: OrderInquiry
+  ): Promise<Order[]> {
+    const page = Math.max(1, Number(inquiry.page) || 1);
+    const limit = Math.min(500, Math.max(1, Number(inquiry.limit) || 20));
+
+    const orParts = await this.buildMemberOrdersOrMatch(memberId);
     const match: T = { $or: orParts };
     if (inquiry.orderStatus) match.orderStatus = inquiry.orderStatus;
 
@@ -416,7 +421,63 @@ class OrderService {
         },
       ])
       .exec();
-    return result ;
+    return result || [];
+  }
+
+  /**
+   * `memberId` va `customerPhone` (profil `memberPhone` bilan raqamlar bo‘yicha solishtiriladi)
+   * tekshirilgach, shu foydalanuvchiga tegishli buyurtmalar va `orderItems` o‘chiriladi
+   * — `/orders/cancel-by-member`.
+   */
+  public async deleteOrdersByMemberVerifiedPhone(
+    memberId: ObjectId,
+    customerPhone: string
+  ): Promise<{ deletedOrders: number; deletedItems: number }> {
+    const p = customerPhone.trim();
+    if (!p) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.CUSTOMER_PHONE_REQUIRED);
+    }
+
+    const exists = await this.memberService.memberExistsById(memberId);
+    if (!exists) {
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    }
+
+    const profilePhone = await this.memberService.getMemberPhoneById(memberId);
+    if (!profilePhone) {
+      throw new Errors(
+        HttpCode.BAD_REQUEST,
+        Message.MEMBER_NO_PHONE_ON_PROFILE
+      );
+    }
+
+    const digits = (s: string) => s.replace(/\D/g, "");
+    const dProfile = digits(profilePhone);
+    const dReq = digits(p);
+    if (dReq.length < 5 || dProfile !== dReq) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.MEMBER_PHONE_MISMATCH);
+    }
+
+    const orParts = await this.buildMemberOrdersOrMatch(memberId);
+    const orders = await this.orderModel
+      .find({ $or: orParts })
+      .select("_id")
+      .lean()
+      .exec();
+    const orderIds = orders.map((o) => o._id);
+    if (orderIds.length === 0) {
+      return { deletedOrders: 0, deletedItems: 0 };
+    }
+    const itemResult = await this.orderItemModel.deleteMany({
+      orderId: { $in: orderIds },
+    });
+    const orderResult = await this.orderModel.deleteMany({
+      _id: { $in: orderIds },
+    });
+    return {
+      deletedOrders: orderResult.deletedCount ?? 0,
+      deletedItems: itemResult.deletedCount ?? 0,
+    };
   }
 
   /**

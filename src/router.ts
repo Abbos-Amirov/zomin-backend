@@ -37,6 +37,7 @@ router
 /** Order */
 router
   .get("/orders/all-member", orderController.getOrdersAllMember)
+  .post("/orders/cancel-by-member", orderController.cancelOrdersByMember)
   .post(
     "/order/create",
     memberController.verifyAuth,

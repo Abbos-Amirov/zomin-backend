@@ -25,6 +25,11 @@ export enum Message {
   MEMBER_ID_MISMATCH = "memberId does not match authenticated user",
   INVALID_MEMBER_ID =
     "memberId must be the member's MongoDB _id (24 hex characters), not a short number",
+  CUSTOMER_PHONE_REQUIRED = "customerPhone is required (query or JSON body)",
+  MEMBER_NO_PHONE_ON_PROFILE =
+    "This member has no phone on file; cannot verify customerPhone",
+  MEMBER_PHONE_MISMATCH =
+    "customerPhone does not match this member's registered phone",
   PURGE_ORDERS_CRITERIA = "Provide valid memberId and/or customerPhone",
   INVALID_TABLE_ID = "tableId is required or invalid",
   NOT_TABLE = "No table found for this QR code",
