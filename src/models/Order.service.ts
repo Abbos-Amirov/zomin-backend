@@ -552,22 +552,138 @@ class OrderService {
     };
   }
 
+  /** Mijoz/stol faqat o‘z buyurtmasini yangilashi uchun filtr. */
+  private buildOrderAccessMatch(
+    member: Member | null | undefined,
+    table: Table | null | undefined
+  ): T {
+    const mid = member?._id
+      ? shapeIntoMongooseObjectId(member._id)
+      : null;
+    const tid = table?._id
+      ? shapeIntoMongooseObjectId(table._id)
+      : null;
+    if (mid && tid) return { $or: [{ memberId: mid }, { tableId: tid }] };
+    if (mid) return { memberId: mid };
+    if (tid) return { tableId: tid };
+    throw new Errors(HttpCode.UNAUTHORIZED, Message.NOT_AUTHENTICATED);
+  }
+
+  private assertOrderQuantityEditable(order: {
+    orderStatus?: string;
+  }): void {
+    const ok =
+      order.orderStatus === OrderStatus.PAUSE ||
+      order.orderStatus === OrderStatus.PENDING;
+    if (!ok) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.ORDER_NOT_EDITABLE);
+    }
+  }
+
+  /** Buyurtma qatorlari bo‘yicha `orderTotal` / `orderDelivery` (DELIVERY qoidasi createOrder bilan bir xil). */
+  private async recalculateOrderTotals(orderId: ObjectId): Promise<void> {
+    const order = await this.orderModel.findById(orderId).lean().exec();
+    if (!order) return;
+    const items = await this.orderItemModel
+      .find({ orderId })
+      .select("itemPrice itemQuantity")
+      .lean()
+      .exec();
+    const amount = items.reduce(
+      (s, i) =>
+        s +
+        (Number(i.itemPrice) || 0) * (Number(i.itemQuantity) || 0),
+      0
+    );
+    let orderDelivery = 0;
+    if (order.orderType === OrderType.DELIVERY) {
+      orderDelivery = amount < 100 ? 5 : 0;
+    }
+    await this.orderModel
+      .updateOne(
+        { _id: orderId },
+        { $set: { orderTotal: amount + orderDelivery, orderDelivery } }
+      )
+      .exec();
+  }
+
+  /**
+   * Bitta orderItem `itemQuantity` (0 = qatorni o‘chirish; oxirgi qator bo‘lsa buyurtma ham o‘chadi).
+   * `orderTotal` qayta hisoblanadi.
+   */
+  public async updateOrderItemQuantity(
+    member: Member | null,
+    table: Table | null,
+    orderId: ObjectId,
+    orderItemId: ObjectId,
+    quantity: number
+  ): Promise<Order | null> {
+    if (
+      !Number.isFinite(quantity) ||
+      !Number.isInteger(quantity) ||
+      quantity < 0
+    ) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_ITEM_QUANTITY);
+    }
+
+    const hasClient = !!(member?._id ?? table?._id);
+    const order = hasClient
+      ? await this.orderModel
+          .findOne({
+            _id: orderId,
+            ...this.buildOrderAccessMatch(member, table),
+          })
+          .exec()
+      : await this.orderModel.findOne({ _id: orderId }).exec();
+    if (!order) {
+      throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+    }
+
+    this.assertOrderQuantityEditable(order);
+
+    const item = await this.orderItemModel
+      .findOne({ _id: orderItemId, orderId })
+      .exec();
+    if (!item) {
+      throw new Errors(HttpCode.NOT_FOUND, Message.ORDER_ITEM_NOT_FOUND);
+    }
+
+    if (quantity === 0) {
+      await this.orderItemModel.deleteOne({ _id: orderItemId }).exec();
+    } else {
+      await this.orderItemModel
+        .updateOne({ _id: orderItemId }, { $set: { itemQuantity: quantity } })
+        .exec();
+    }
+
+    const remaining = await this.orderItemModel.countDocuments({ orderId });
+    if (remaining === 0) {
+      await this.orderModel.deleteOne({ _id: orderId }).exec();
+      return null;
+    }
+
+    await this.recalculateOrderTotals(orderId);
+    return this.getOrderByIdWithDetails(String(orderId));
+  }
+
   public async updateOrder(
     member: Member | null,
     table: Table | null,
     input: OrderUpdateInput
   ): Promise<Order> {
-    const memberId = shapeIntoMongooseObjectId(member?._id);
-    const tableId = shapeIntoMongooseObjectId(table?._id);
+    if (input.orderStatus === undefined) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.ORDER_UPDATE_PAYLOAD);
+    }
+
     const orderId = shapeIntoMongooseObjectId(input.orderId);
     const orderStatus = input.orderStatus;
+    const access = this.buildOrderAccessMatch(member, table);
 
     const result = await this.orderModel
       .findOneAndUpdate(
         {
-          tableId: tableId,
-          memberId: memberId,
           _id: orderId,
+          ...access,
         },
         { orderStatus: orderStatus },
         { new: true }

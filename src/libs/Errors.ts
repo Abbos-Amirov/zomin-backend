@@ -15,6 +15,15 @@ export enum Message {
   CREATE_FAILED = "Create is failed!",
   UPDATE_FAILED = "Update is failed!",
 
+  INVALID_ITEM_QUANTITY =
+    "quantity must be a non-negative integer (0 removes the line)",
+  ORDER_ITEM_NOT_FOUND = "Order line not found for this order",
+  ORDER_NOT_EDITABLE =
+    "This order cannot be changed (only PAUSE or PENDING orders can be edited)",
+  ORDER_UPDATE_PAYLOAD = "Provide orderStatus and/or itemUpdates with orderId",
+  ORDER_ITEM_ID_INVALID = "Each itemUpdates.orderItemId must be a valid ObjectId",
+  ORDER_PATH_IDS_INVALID = "orderId and orderItemId in URL must be valid ObjectIds",
+
   USED_NICK_PHONE = "You are inserting already used nick ore phone",
   ADMIN_EXIST="Admin account already exists. Please sign up as a User!",
   TOKEN_CREATION_FAILED = "Token creation error!",

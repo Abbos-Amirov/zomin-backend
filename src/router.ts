@@ -46,6 +46,10 @@ router
   .post("/order/link", orderController.createLinkOrder)
   .post("/order/link-takeout", orderController.createLinkTakeoutOrder)
   .get("/order/all", memberController.verifyAuth, orderController.getMyOrders)
+  .patch(
+    "/order/:orderId/item/:orderItemId/quantity",
+    orderController.patchOrderItemQuantity
+  )
   .post(
     "/order/update",
     memberController.verifyAuth,

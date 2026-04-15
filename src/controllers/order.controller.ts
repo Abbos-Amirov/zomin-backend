@@ -284,12 +284,115 @@ orderController.getMyOrders = async (req: ExtendedRequest, res: Response) => {
 orderController.updateOrder = async (req: ExtendedRequest, res: Response) => {
   try {
     console.log("updateOrder");
-    const input: OrderUpdateInput = req.body;
-    const result = await orderService.updateOrder(req.member, req.table, input);
+    const input = req.body as OrderUpdateInput;
+    if (!input?.orderId) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.ORDER_UPDATE_PAYLOAD);
+    }
+    if (
+      input.orderStatus === undefined &&
+      (!input.itemUpdates || input.itemUpdates.length === 0)
+    ) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.ORDER_UPDATE_PAYLOAD);
+    }
 
-    res.status(HttpCode.CREATED).json(result);
+    const oid = shapeIntoMongooseObjectId(input.orderId as unknown as string);
+
+    if (input.itemUpdates && input.itemUpdates.length > 0) {
+      for (const u of input.itemUpdates) {
+        const iidRaw = String(u.orderItemId ?? "").trim();
+        if (!iidRaw || !mongoose.Types.ObjectId.isValid(iidRaw)) {
+          throw new Errors(HttpCode.BAD_REQUEST, Message.ORDER_ITEM_ID_INVALID);
+        }
+        const updated = await orderService.updateOrderItemQuantity(
+          req.member,
+          req.table,
+          oid,
+          shapeIntoMongooseObjectId(iidRaw),
+          Number(u.quantity)
+        );
+        if (updated === null) {
+          res.status(HttpCode.OK).json({
+            success: true,
+            order: null,
+            orderDeleted: true,
+          });
+          return;
+        }
+      }
+    }
+
+    if (input.orderStatus !== undefined) {
+      await orderService.updateOrder(req.member, req.table, input);
+    }
+
+    const full = await orderService.getOrderByIdWithDetails(String(oid));
+    if (!full) {
+      res.status(HttpCode.OK).json({
+        success: true,
+        order: null,
+        orderDeleted: true,
+      });
+      return;
+    }
+
+    res.status(HttpCode.OK).json({ success: true, order: full });
   } catch (err) {
     console.log("Error, updateOrder:", err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/**
+ * PATCH /order/:orderId/item/:orderItemId/quantity — cookie kerak emas;
+ * body: { "quantity": number } (0 = qatorni o‘chirish). ID bilgan har kim o‘zgartira oladi.
+ */
+orderController.patchOrderItemQuantity = async (req: Request, res: Response) => {
+  try {
+    console.log("patchOrderItemQuantity");
+    const { orderId, orderItemId } = req.params;
+    const oRaw = String(orderId ?? "").trim();
+    const iRaw = String(orderItemId ?? "").trim();
+    if (
+      !oRaw ||
+      !iRaw ||
+      !mongoose.Types.ObjectId.isValid(oRaw) ||
+      !mongoose.Types.ObjectId.isValid(iRaw)
+    ) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.ORDER_PATH_IDS_INVALID);
+    }
+
+    const q = (req.body as { quantity?: unknown })?.quantity;
+    const quantity = Number(q);
+    if (
+      q === undefined ||
+      !Number.isFinite(quantity) ||
+      !Number.isInteger(quantity) ||
+      quantity < 0
+    ) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_ITEM_QUANTITY);
+    }
+
+    const result = await orderService.updateOrderItemQuantity(
+      null,
+      null,
+      shapeIntoMongooseObjectId(oRaw),
+      shapeIntoMongooseObjectId(iRaw),
+      quantity
+    );
+
+    if (result === null) {
+      res.status(HttpCode.OK).json({
+        success: true,
+        order: null,
+        orderDeleted: true,
+      });
+      return;
+    }
+
+    res.status(HttpCode.OK).json({ success: true, order: result });
+  } catch (err) {
+    console.log("Error, patchOrderItemQuantity:", err);
     if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }

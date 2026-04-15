@@ -52,11 +52,18 @@ export interface OrderItemInput {
   orderId?: ObjectId;
 }
 
+/** POST /order/update — bir nechta qator miqdorini yangilash (Variant B). */
+export interface OrderItemQuantityUpdateEntry {
+  orderItemId: string;
+  quantity: number;
+}
+
 export interface OrderUpdateInput {
   orderId: ObjectId;
   orderStatus?: OrderStatus;
   paymentStatus?: PaymentStatus;
   paymentMethod?: PaymentMethod;
+  itemUpdates?: OrderItemQuantityUpdateEntry[];
 }
 
 export interface OrderInquiry {
