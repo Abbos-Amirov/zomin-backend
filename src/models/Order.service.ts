@@ -1336,6 +1336,78 @@ class OrderService {
     return { updatedCount: unpaid.length, totalSum };
   }
 
+  /** Admin: `orders` da `paymentStatus: PAID` bo‘lganlar soni va `orderTotal` yig‘indisi. */
+  public async getPaidOrdersTotalSummary(): Promise<{
+    orderCount: number;
+    orderTotalSum: number;
+  }> {
+    const rows = await this.orderModel
+      .aggregate([
+        { $match: { paymentStatus: PaymentStatus.PAID } },
+        {
+          $group: {
+            _id: null,
+            orderCount: { $sum: 1 },
+            orderTotalSum: { $sum: { $ifNull: ["$orderTotal", 0] } },
+          },
+        },
+      ])
+      .exec();
+    const row = rows[0];
+    return {
+      orderCount: row?.orderCount ?? 0,
+      orderTotalSum: row?.orderTotalSum ?? 0,
+    };
+  }
+
+  /**
+   * Admin: oxirgi **24 soat** ichida yaratilgan (`createdAt`) va `paymentStatus: PAID`
+   * bo‘lgan buyurtmalar — soni va `orderTotal` yig‘indisi (kunlik/rolling savdo uchun alohida).
+   */
+  public async getPaidOrdersRolling24hSummary(): Promise<{
+    orderCount: number;
+    orderTotalSum: number;
+  }> {
+    const rows = await this.orderModel
+      .aggregate([
+        {
+          $match: {
+            paymentStatus: PaymentStatus.PAID,
+            $expr: {
+              $and: [
+                {
+                  $gte: [
+                    "$createdAt",
+                    {
+                      $dateSubtract: {
+                        startDate: "$$NOW",
+                        unit: "hour",
+                        amount: 24,
+                      },
+                    },
+                  ],
+                },
+                { $lte: ["$createdAt", "$$NOW"] },
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            orderCount: { $sum: 1 },
+            orderTotalSum: { $sum: { $ifNull: ["$orderTotal", 0] } },
+          },
+        },
+      ])
+      .exec();
+    const row = rows[0];
+    return {
+      orderCount: row?.orderCount ?? 0,
+      orderTotalSum: row?.orderTotalSum ?? 0,
+    };
+  }
+
   public async getStatis(): Promise<OrderStatis> {
     // Order Status
     const allOrders = await this.orderModel.find().exec();

@@ -594,6 +594,51 @@ orderController.updateChosenOrder = async (req: Request, res: Response) => {
   }
 };
 
+/** GET /admin/order/paid/summary — PAID buyurtmalar soni va `orderTotal` yig‘indisi. */
+orderController.getPaidOrdersTotalSummary = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const result = await orderService.getPaidOrdersTotalSummary();
+    res.status(HttpCode.OK).json({
+      success: true,
+      paymentStatus: PaymentStatus.PAID,
+      orderCount: result.orderCount,
+      orderTotalSum: result.orderTotalSum,
+    });
+  } catch (err) {
+    console.log("Error, getPaidOrdersTotalSummary:", err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/** GET /admin/order/paid/last-24h — oxirgi 24 soatda yaratilgan PAID buyurtmalar yig‘indisi. */
+orderController.getPaidOrdersRolling24hSummary = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const result = await orderService.getPaidOrdersRolling24hSummary();
+    const periodEnd = new Date();
+    const periodStart = new Date(periodEnd.getTime() - 24 * 60 * 60 * 1000);
+    res.status(HttpCode.OK).json({
+      success: true,
+      scope: "rolling_last_24_hours",
+      paymentStatus: PaymentStatus.PAID,
+      periodStart: periodStart.toISOString(),
+      periodEnd: periodEnd.toISOString(),
+      orderCount: result.orderCount,
+      orderTotalSum: result.orderTotalSum,
+    });
+  } catch (err) {
+    console.log("Error, getPaidOrdersRolling24hSummary:", err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
 orderController.getOrderStatis = async (req: Request, res: Response) => {
   try {
     console.log("getOrderStatis");

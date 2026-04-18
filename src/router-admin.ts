@@ -132,6 +132,14 @@ routerAdmin.post(
   orderController.updateChosenOrder
 );
 routerAdmin.get(
+  "/order/paid/summary",
+  orderController.getPaidOrdersTotalSummary
+);
+routerAdmin.get(
+  "/order/paid/last-24h",
+  orderController.getPaidOrdersRolling24hSummary
+);
+routerAdmin.get(
   "/order/statis",
   // adminController.verifyAdmin,
   orderController.getOrderStatis
