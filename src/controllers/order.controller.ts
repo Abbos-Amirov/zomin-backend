@@ -139,8 +139,8 @@ orderController.getOrdersAllMember = async (req: Request, res: Response) => {
 };
 
 /**
- * POST /orders/cancel-by-member — `memberId` va `customerPhone` (query yoki body);
- * telefon profil bilan mos bo‘lsa, shu memberga tegishli buyurtmalar va orderItems DB dan o‘chiriladi.
+ * POST /orders/cancel-by-member — `memberId`, `customerPhone`, `orderId` (hammasi majburiy, query yoki body);
+ * telefon profil bilan mos va buyurtma mijozga tegishli bo‘lsa, faqat shu buyurtma va orderItems o‘chiriladi.
  */
 orderController.cancelOrdersByMember = async (req: Request, res: Response) => {
   try {
@@ -168,14 +168,33 @@ orderController.cancelOrdersByMember = async (req: Request, res: Response) => {
       throw new Errors(HttpCode.BAD_REQUEST, Message.CUSTOMER_PHONE_REQUIRED);
     }
 
+    const rawOrderId =
+      (typeof req.body?.orderId === "string" && req.body.orderId) ||
+      (typeof req.query.orderId === "string" && req.query.orderId) ||
+      "";
+    const orderIdTrimmed = rawOrderId.trim();
+    if (!orderIdTrimmed) {
+      throw new Errors(
+        HttpCode.BAD_REQUEST,
+        Message.CANCEL_BY_MEMBER_ORDER_ID_REQUIRED
+      );
+    }
+    if (!mongoose.Types.ObjectId.isValid(orderIdTrimmed)) {
+      throw new Errors(
+        HttpCode.BAD_REQUEST,
+        Message.ORDER_PURGE_ORDER_ID_INVALID
+      );
+    }
+
     const result = await orderService.deleteOrdersByMemberVerifiedPhone(
       memberOid,
-      customerPhone
+      customerPhone,
+      orderIdTrimmed
     );
 
     res.status(HttpCode.OK).json({
       success: true,
-      message: "Orders deleted",
+      message: "Order deleted",
       deletedOrders: result.deletedOrders,
       deletedItems: result.deletedItems,
     });
@@ -187,8 +206,9 @@ orderController.cancelOrdersByMember = async (req: Request, res: Response) => {
 };
 
 /**
- * POST|DELETE /admin/order/purge-by-member — admin cookie.
- * Body yoki query: `memberId` (ixtiyoriy, lekin berilsa to‘g‘ri ObjectId) va/yoki `customerPhone`.
+ * POST|DELETE /admin/order/purge-by-member — `paymentStatus` → PAID.
+ * Body yoki query: `memberId`, `customerPhone` (kamida bittasi), ixtiyoriy `orderId`
+ * (berilsa faqat shu buyurtma, mijoz bilan mosligi tekshiriladi).
  */
 orderController.deleteOrdersByMemberId = async (
   req: Request,
@@ -205,9 +225,14 @@ orderController.deleteOrdersByMemberId = async (
       (typeof req.query.customerPhone === "string" &&
         req.query.customerPhone) ||
       "";
+    const rawOrderId =
+      (typeof req.body?.orderId === "string" && req.body.orderId) ||
+      (typeof req.query.orderId === "string" && req.query.orderId) ||
+      "";
 
     const memberTrimmed = rawMember.trim();
     const phoneTrimmed = rawPhone.trim();
+    const orderIdTrimmed = rawOrderId.trim();
 
     const hasMember = memberTrimmed.length > 0;
     const hasPhone = phoneTrimmed.length > 0;
@@ -218,21 +243,102 @@ orderController.deleteOrdersByMemberId = async (
     if (hasMember && !mongoose.Types.ObjectId.isValid(memberTrimmed)) {
       throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_MEMBER_ID);
     }
+    if (
+      orderIdTrimmed.length > 0 &&
+      !mongoose.Types.ObjectId.isValid(orderIdTrimmed)
+    ) {
+      throw new Errors(
+        HttpCode.BAD_REQUEST,
+        Message.ORDER_PURGE_ORDER_ID_INVALID
+      );
+    }
 
     const memberOid = hasMember
       ? shapeIntoMongooseObjectId(memberTrimmed)
       : undefined;
-    const result = await orderService.deleteOrdersByMemberOrPhone({
+    const result = await orderService.markOrdersPaidByMemberOrPhone({
       memberId: memberOid,
       customerPhone: hasPhone ? phoneTrimmed : undefined,
+      orderId: orderIdTrimmed.length > 0 ? orderIdTrimmed : undefined,
     });
     res.status(HttpCode.OK).json({
       success: true,
-      deletedOrders: result.deletedOrders,
-      deletedItems: result.deletedItems,
+      message: "Payment status set to PAID for matching orders",
+      matchedOrders: result.matchedOrders,
+      paymentStatusUpdated: result.paymentStatusUpdated,
     });
   } catch (err) {
     console.log("Error, deleteOrdersByMemberId:", err);
+    if (err instanceof Errors) res.status(err.code).json(err.toJSON());
+    else res.status(Errors.standard.code).json(Errors.standard);
+  }
+};
+
+/**
+ * POST /admin/order/delivery/mark-paid — `tableId`, `orderId`, `orderType: DELIVERY`;
+ * buyurtma `DELIVERY` + `UNPAID` + shu `tableId` bo‘lsa `paymentStatus` → PAID.
+ */
+orderController.markDeliveryTableOrderPaid = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const rawTable =
+      (typeof req.body?.tableId === "string" && req.body.tableId) ||
+      (typeof req.query.tableId === "string" && req.query.tableId) ||
+      "";
+    const rawOrder =
+      (typeof req.body?.orderId === "string" && req.body.orderId) ||
+      (typeof req.query.orderId === "string" && req.query.orderId) ||
+      "";
+    const rawType =
+      (typeof req.body?.orderType === "string" && req.body.orderType) ||
+      (typeof req.query.orderType === "string" && req.query.orderType) ||
+      "";
+
+    const tableTrim = rawTable.trim();
+    const orderTrim = rawOrder.trim();
+    const typeTrim = rawType.trim().toUpperCase();
+
+    if (!tableTrim || !orderTrim || !typeTrim) {
+      throw new Errors(
+        HttpCode.BAD_REQUEST,
+        Message.DELIVERY_TABLE_PAY_PAYLOAD
+      );
+    }
+    if (!mongoose.Types.ObjectId.isValid(tableTrim)) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_TABLE_ID);
+    }
+    if (!mongoose.Types.ObjectId.isValid(orderTrim)) {
+      throw new Errors(
+        HttpCode.BAD_REQUEST,
+        Message.ORDER_PURGE_ORDER_ID_INVALID
+      );
+    }
+    if (typeTrim !== OrderType.DELIVERY) {
+      throw new Errors(
+        HttpCode.BAD_REQUEST,
+        Message.DELIVERY_TABLE_PAY_ORDER_TYPE
+      );
+    }
+
+    const tableOid = shapeIntoMongooseObjectId(tableTrim);
+    const orderOid = shapeIntoMongooseObjectId(orderTrim);
+    const result = await orderService.markDeliveryTableOrderUnpaidToPaid(
+      tableOid,
+      orderOid
+    );
+
+    res.status(HttpCode.OK).json({
+      success: true,
+      message: result.alreadyPaid
+        ? "Order was already PAID"
+        : "Payment status set to PAID",
+      paymentStatusUpdated: result.paymentStatusUpdated,
+      alreadyPaid: result.alreadyPaid,
+    });
+  } catch (err) {
+    console.log("Error, markDeliveryTableOrderPaid:", err);
     if (err instanceof Errors) res.status(err.code).json(err.toJSON());
     else res.status(Errors.standard.code).json(Errors.standard);
   }

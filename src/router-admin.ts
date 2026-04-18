@@ -93,6 +93,10 @@ routerAdmin.post(
   "/order/purge-by-table",
   orderController.deleteOrdersByTableId
 );
+routerAdmin.post(
+  "/order/delivery/mark-paid",
+  orderController.markDeliveryTableOrderPaid
+);
 routerAdmin.delete(
   "/order/purge-by-table",
   orderController.deleteOrdersByTableId

@@ -449,17 +449,26 @@ class OrderService {
   }
 
   /**
-   * `memberId` va `customerPhone` (profil `memberPhone` bilan raqamlar bo‘yicha solishtiriladi)
-   * tekshirilgach, shu foydalanuvchiga tegishli buyurtmalar va `orderItems` o‘chiriladi
-   * — `/orders/cancel-by-member`.
+   * `/orders/cancel-by-member`: `memberId`, `customerPhone` (profil bilan), `orderId`.
+   * Faqat shu `orderId` dagi buyurtma `buildMemberOrdersOrMatch` bo‘yicha mijozga tegishli bo‘lsa,
+   * uning `orderItems`lari va o‘zi o‘chiriladi.
    */
   public async deleteOrdersByMemberVerifiedPhone(
     memberId: ObjectId,
-    customerPhone: string
+    customerPhone: string,
+    orderId: string
   ): Promise<{ deletedOrders: number; deletedItems: number }> {
     const p = customerPhone.trim();
     if (!p) {
       throw new Errors(HttpCode.BAD_REQUEST, Message.CUSTOMER_PHONE_REQUIRED);
+    }
+
+    const oidTrim = orderId.trim();
+    if (!oidTrim) {
+      throw new Errors(
+        HttpCode.BAD_REQUEST,
+        Message.CANCEL_BY_MEMBER_ORDER_ID_REQUIRED
+      );
     }
 
     const exists = await this.memberService.memberExistsById(memberId);
@@ -482,22 +491,46 @@ class OrderService {
       throw new Errors(HttpCode.BAD_REQUEST, Message.MEMBER_PHONE_MISMATCH);
     }
 
+    let orderOid: ObjectId;
+    try {
+      orderOid = shapeIntoMongooseObjectId(oidTrim);
+    } catch {
+      throw new Errors(
+        HttpCode.BAD_REQUEST,
+        Message.ORDER_PURGE_ORDER_ID_INVALID
+      );
+    }
+
     const orParts = await this.buildMemberOrdersOrMatch(memberId);
-    const orders = await this.orderModel
-      .find({ $or: orParts })
+    const orderMatch: T = { $or: orParts };
+
+    const doc = await this.orderModel
+      .findOne({ $and: [{ _id: orderOid }, orderMatch] })
       .select("_id")
       .lean()
       .exec();
-    const orderIds = orders.map((o) => o._id);
-    if (orderIds.length === 0) {
-      return { deletedOrders: 0, deletedItems: 0 };
+    if (!doc) {
+      const any = await this.orderModel
+        .findById(orderOid)
+        .select("_id")
+        .lean()
+        .exec();
+      if (!any) {
+        throw new Errors(
+          HttpCode.NOT_FOUND,
+          Message.ORDER_PURGE_ORDER_NOT_FOUND
+        );
+      }
+      throw new Errors(
+        HttpCode.FORBIDDEN,
+        Message.ORDER_PURGE_ORDER_MISMATCH
+      );
     }
+
     const itemResult = await this.orderItemModel.deleteMany({
-      orderId: { $in: orderIds },
+      orderId: orderOid,
     });
-    const orderResult = await this.orderModel.deleteMany({
-      _id: { $in: orderIds },
-    });
+    const orderResult = await this.orderModel.deleteOne({ _id: orderOid });
     return {
       deletedOrders: orderResult.deletedCount ?? 0,
       deletedItems: itemResult.deletedCount ?? 0,
@@ -505,17 +538,19 @@ class OrderService {
   }
 
   /**
-   * `memberId` va/yoki `customerPhone` bo‘yicha buyurtmalar va `orderItems`.
-   * Ikkalasi berilsa — `$or` (birlashtirilgan to‘plam).
+   * Admin `/order/purge-by-member`: `paymentStatus` → `PAID`.
+   * - `orderId` berilsa: faqat shu buyurtma, `memberId` / `customerPhone` bilan mosligi tekshiriladi.
+   * - `orderId` bo‘lmasa: `memberId` va/yoki `customerPhone` bo‘yicha barcha mos buyurtmalar.
    */
-  public async deleteOrdersByMemberOrPhone(criteria: {
+  public async markOrdersPaidByMemberOrPhone(criteria: {
     memberId?: ObjectId;
     customerPhone?: string;
+    orderId?: string;
   }): Promise<{
-    deletedOrders: number;
-    deletedItems: number;
+    matchedOrders: number;
+    paymentStatusUpdated: number;
   }> {
-    const { memberId, customerPhone } = criteria;
+    const { memberId, customerPhone, orderId } = criteria;
     const hasMember = !!memberId;
     const hasPhone = !!customerPhone && customerPhone.length > 0;
     if (!hasMember && !hasPhone) {
@@ -529,6 +564,55 @@ class OrderService {
           ? { memberId }
           : { customerPhone };
 
+    const hasOrderId = !!orderId && orderId.trim().length > 0;
+    if (hasOrderId) {
+      const trimmed = orderId!.trim();
+      let orderOid: ObjectId;
+      try {
+        orderOid = shapeIntoMongooseObjectId(trimmed);
+      } catch {
+        throw new Errors(
+          HttpCode.BAD_REQUEST,
+          Message.ORDER_PURGE_ORDER_ID_INVALID
+        );
+      }
+
+      const doc = await this.orderModel
+        .findOne({ $and: [{ _id: orderOid }, match] })
+        .select("_id")
+        .lean()
+        .exec();
+      if (!doc) {
+        const any = await this.orderModel
+          .findById(orderOid)
+          .select("_id")
+          .lean()
+          .exec();
+        if (!any) {
+          throw new Errors(
+            HttpCode.NOT_FOUND,
+            Message.ORDER_PURGE_ORDER_NOT_FOUND
+          );
+        }
+        throw new Errors(
+          HttpCode.FORBIDDEN,
+          Message.ORDER_PURGE_ORDER_MISMATCH
+        );
+      }
+
+      const orderResult = await this.orderModel
+        .updateOne(
+          { _id: orderOid },
+          { $set: { paymentStatus: PaymentStatus.PAID } }
+        )
+        .exec();
+
+      return {
+        matchedOrders: 1,
+        paymentStatusUpdated: orderResult.modifiedCount ?? 0,
+      };
+    }
+
     const orders = await this.orderModel
       .find(match)
       .select("_id")
@@ -536,18 +620,77 @@ class OrderService {
       .exec();
     const orderIds = orders.map((o) => o._id);
     if (orderIds.length === 0) {
-      return { deletedOrders: 0, deletedItems: 0 };
+      return { matchedOrders: 0, paymentStatusUpdated: 0 };
     }
-    const itemResult = await this.orderItemModel.deleteMany({
-      orderId: { $in: orderIds },
-    });
-    const orderResult = await this.orderModel.deleteMany({
-      _id: { $in: orderIds },
-    });
+
+    const orderResult = await this.orderModel
+      .updateMany(
+        { _id: { $in: orderIds } },
+        { $set: { paymentStatus: PaymentStatus.PAID } }
+      )
+      .exec();
+
     return {
-      deletedOrders: orderResult.deletedCount ?? 0,
-      deletedItems: itemResult.deletedCount ?? 0,
+      matchedOrders: orderIds.length,
+      paymentStatusUpdated: orderResult.modifiedCount ?? 0,
     };
+  }
+
+  /**
+   * Admin: `tableId`, `orderId`, `orderType === DELIVERY`, `paymentStatus === UNPAID`
+   * bo‘lsa → `PAID`.
+   */
+  public async markDeliveryTableOrderUnpaidToPaid(
+    tableId: ObjectId,
+    orderId: ObjectId
+  ): Promise<{ paymentStatusUpdated: number; alreadyPaid: boolean }> {
+    const result = await this.orderModel
+      .updateOne(
+        {
+          _id: orderId,
+          tableId,
+          orderType: OrderType.DELIVERY,
+          paymentStatus: PaymentStatus.UNPAID,
+        },
+        { $set: { paymentStatus: PaymentStatus.PAID } }
+      )
+      .exec();
+
+    if ((result.matchedCount ?? 0) > 0) {
+      return {
+        paymentStatusUpdated: result.modifiedCount ?? 0,
+        alreadyPaid: false,
+      };
+    }
+
+    const order = await this.orderModel.findById(orderId).lean();
+    if (!order) {
+      throw new Errors(
+        HttpCode.NOT_FOUND,
+        Message.ORDER_PURGE_ORDER_NOT_FOUND
+      );
+    }
+    const tidOrder = order.tableId != null ? String(order.tableId) : "";
+    const tidReq = String(tableId);
+    if (tidOrder !== tidReq) {
+      throw new Errors(
+        HttpCode.FORBIDDEN,
+        Message.DELIVERY_TABLE_PAY_TABLE_MISMATCH
+      );
+    }
+    if (order.orderType !== OrderType.DELIVERY) {
+      throw new Errors(
+        HttpCode.BAD_REQUEST,
+        Message.DELIVERY_TABLE_PAY_ORDER_TYPE
+      );
+    }
+    if (order.paymentStatus === PaymentStatus.PAID) {
+      return { paymentStatusUpdated: 0, alreadyPaid: true };
+    }
+    throw new Errors(
+      HttpCode.BAD_REQUEST,
+      Message.DELIVERY_TABLE_PAY_NOT_UNPAID
+    );
   }
 
   /** `tableId` ga bog‘langan barcha buyurtmalar va ularning `orderItems` */
@@ -938,7 +1081,8 @@ class OrderService {
   }
 
   /**
-   * Admin: faqat `/order/link` + `orderType: TABLE` (o‘tirib yeyish), `LINK_TAKEOUT` emas
+   * Admin: faqat `/order/link` + `orderType: TABLE` (o‘tirib yeyish), `LINK_TAKEOUT` emas;
+   * `paymentStatus: PAID` bo‘lganlar ro‘yxatga kirmaydi.
    */
   public async getLinkOrdersDineInAdmin(
     inquiry?: OrderInquiry
@@ -947,6 +1091,7 @@ class OrderService {
       orderSource: OrderSource.LINK,
       orderType: OrderType.TABLE,
       orderStatus: { $ne: OrderStatus.PAUSE },
+      paymentStatus: { $ne: PaymentStatus.PAID },
     };
     const page = Math.max(1, Number(inquiry?.page) || 1);
     const limit = Math.min(500, Math.max(1, Number(inquiry?.limit) || 50));
@@ -1007,7 +1152,8 @@ class OrderService {
   }
 
   /**
-   * Admin: olib ketish — `/order/link` (`TAKEOUT`) va `/order/link-takeout` (`LINK_TAKEOUT`)
+   * Admin: olib ketish — `/order/link` (`TAKEOUT`) va `/order/link-takeout` (`LINK_TAKEOUT`);
+   * `paymentStatus: PAID` bo‘lganlar ro‘yxatga kirmaydi.
    */
   public async getLinkOrdersTakeoutAdmin(
     inquiry?: OrderInquiry
@@ -1018,6 +1164,7 @@ class OrderService {
         $in: [OrderSource.LINK, OrderSource.LINK_TAKEOUT],
       },
       orderStatus: { $ne: OrderStatus.PAUSE },
+      paymentStatus: { $ne: PaymentStatus.PAID },
     };
     const page = Math.max(1, Number(inquiry?.page) || 1);
     const limit = Math.min(500, Math.max(1, Number(inquiry?.limit) || 50));

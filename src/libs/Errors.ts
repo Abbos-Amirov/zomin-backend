@@ -40,6 +40,19 @@ export enum Message {
   MEMBER_PHONE_MISMATCH =
     "customerPhone does not match this member's registered phone",
   PURGE_ORDERS_CRITERIA = "Provide valid memberId and/or customerPhone",
+  ORDER_PURGE_ORDER_ID_INVALID = "orderId must be a valid ObjectId (24 hex)",
+  ORDER_PURGE_ORDER_NOT_FOUND = "No order found for this orderId",
+  ORDER_PURGE_ORDER_MISMATCH =
+    "orderId does not belong to this memberId / customerPhone",
+  CANCEL_BY_MEMBER_ORDER_ID_REQUIRED =
+    "orderId is required (JSON body or query) for cancel-by-member",
+  DELIVERY_TABLE_PAY_PAYLOAD =
+    "Provide tableId, orderId, and orderType DELIVERY (JSON body or query)",
+  DELIVERY_TABLE_PAY_ORDER_TYPE = "orderType must be DELIVERY",
+  DELIVERY_TABLE_PAY_TABLE_MISMATCH =
+    "orderId does not belong to this tableId for a DELIVERY order",
+  DELIVERY_TABLE_PAY_NOT_UNPAID =
+    "Only UNPAID orders can be marked PAID via this endpoint",
   INVALID_TABLE_ID = "tableId is required or invalid",
   NOT_TABLE = "No table found for this QR code",
   TABLE_OCCUPIED_BY_ANOTHER =
