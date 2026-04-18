@@ -56,7 +56,7 @@ routerAdmin.post(
 // Table
 routerAdmin.get(
   "/table/all",
-  // adminController.verifyAdmin,
+  adminController.verifyAdmin,
   tableController.getAllTables
 );
 routerAdmin

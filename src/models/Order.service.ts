@@ -28,7 +28,6 @@ import {
   PaymentStatus,
 } from "../libs/enums/order.enum";
 import { T } from "../libs/types/common";
-import { MemberType } from "../libs/enums/member.enum";
 import { TableStatus } from "../libs/enums/table.enum";
 import { Table } from "../libs/types/table";
 import { isMember, isTable } from "../libs/utils/validators";
@@ -90,21 +89,13 @@ class OrderService {
       return accumulator + item.itemPrice * item.itemQuantity;
     }, 0);
 
-    let orderType: OrderType;
-    if (isMember(client)) {
-      orderType =
-        client.memberType === MemberType.USER
-          ? OrderType.DELIVERY
-          : OrderType.TAKEOUT; // restaurant
-    } else if (isTable(client)) {
-      console.log("alajdsf", client.activeIdentifier);
-      orderType = OrderType.TABLE;
-    } else {
+    if (!isMember(client) && !isTable(client)) {
       throw new Errors(HttpCode.BAD_REQUEST, Message.NO_MEMBER_NICK);
     }
 
-    const orderDelivery =
-      orderType === OrderType.DELIVERY ? (amount < 100 ? 5 : 0) : 0;
+    /** `/order/create`: barcha yangi buyurtmalar DB da `orderType: DELIVERY`. */
+    const orderType = OrderType.DELIVERY;
+    const orderDelivery = amount < 100 ? 5 : 0;
 
     const order: OrderInput = {
       orderTotal: amount + orderDelivery,
