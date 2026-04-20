@@ -936,12 +936,14 @@ class OrderService {
   }
 
   /**
-   * Admin panel: `orderType` i `TABLE` yoki `TAKEOUT` bo‘lgan buyurtmalar qaytarilmaydi.
+   * Admin panel: `orderType` i `TABLE` yoki `TAKEOUT` bo‘lganlar va `paymentStatus: PAID`
+   * bo‘lgan buyurtmalar qaytarilmaydi.
    */
   public async getAllOrdersPanel(inquiry: OrderInquiry): Promise<Order[]> {
     const andClauses: T[] = [
       { orderStatus: { $ne: OrderStatus.PAUSE } },
       { orderType: { $nin: [OrderType.TABLE, OrderType.TAKEOUT] } },
+      { paymentStatus: { $ne: PaymentStatus.PAID } },
     ];
 
     if (inquiry.payStatus) andClauses.push({ paymentStatus: inquiry.payStatus });
