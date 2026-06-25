@@ -9,7 +9,7 @@ import { NextFunction, Request, Response } from "express";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import MemberService from "../models/Member.service";
 import AuthService from "../models/Auth.service";
-import { AUTH_TIMER_MEMBER } from "../libs/config";
+import { AUTH_TIMER_MEMBER, getMemberAuthCookieOptions } from "../libs/config";
 import TableService from "../models/Table.service";
 
 const tableService = new TableService();
@@ -38,14 +38,11 @@ memberController.signup = async (req: Request, res: Response) => {
       result = await memberService.signup(newMember),
       token = await authService.createToken(result);
 
-    res.cookie("accessToken", token, {
-      maxAge: AUTH_TIMER_MEMBER * 3600 * 1000,
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-      path: "/",
-      domain: ".navruz.food",
-    });
+    res.cookie(
+      "accessToken",
+      token,
+      getMemberAuthCookieOptions(AUTH_TIMER_MEMBER * 3600 * 1000)
+    );
 
     res.status(HttpCode.CREATED).json({ member: result });
   } catch (err) {
@@ -63,14 +60,11 @@ memberController.login = async (req: Request, res: Response) => {
       token = await authService.createToken(result);
     console.log("token: ", token);
 
-    res.cookie("accessToken", token, {
-      maxAge: AUTH_TIMER_MEMBER * 3600 * 1000,
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-      path: "/",
-      domain: ".navruz.food",
-    });
+    res.cookie(
+      "accessToken",
+      token,
+      getMemberAuthCookieOptions(AUTH_TIMER_MEMBER * 3600 * 1000)
+    );
 
     res.status(HttpCode.OK).json({ member: result });
   } catch (err) {
@@ -83,14 +77,7 @@ memberController.login = async (req: Request, res: Response) => {
 memberController.logout = (req: ExtendedRequest, res: Response) => {
   try {
     console.log("logout");
-    res.cookie("accessToken", "", {
-      maxAge: 0,
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-      path: "/",
-      domain: ".navruz.food",
-    });
+    res.cookie("accessToken", "", getMemberAuthCookieOptions(0));
     res.status(HttpCode.OK).json({ logout: true });
   } catch (err) {
     console.log("Error, logout:", err);

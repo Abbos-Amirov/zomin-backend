@@ -586,6 +586,16 @@ orderController.updateChosenOrder = async (req: Request, res: Response) => {
     console.log("id", id);
     const result = await orderService.updateChosenOrder(id, req.body);
 
+    try {
+      const io = getIo();
+      if (result.memberId)
+        io.to(`member:${result.memberId}`).emit("orderStatusUpdated", result);
+      if (result.tableId)
+        io.to(`table:${result.tableId}`).emit("orderStatusUpdated", result);
+    } catch (ioErr) {
+      console.log("Socket emit failed:", ioErr);
+    }
+
     res.status(HttpCode.OK).json(result);
   } catch (err) {
     console.log("Error, updateChosenOrder:", err);

@@ -77,6 +77,21 @@ mongoose
       socket.on("unsubscribeTableStatus", () => {
         socket.leave("publicTables");
       });
+
+      socket.on(
+        "subscribeOrderUpdates",
+        (payload: { memberId?: string; tableId?: string }) => {
+          if (payload?.memberId) socket.join(`member:${payload.memberId}`);
+          if (payload?.tableId) socket.join(`table:${payload.tableId}`);
+        }
+      );
+      socket.on(
+        "unsubscribeOrderUpdates",
+        (payload: { memberId?: string; tableId?: string }) => {
+          if (payload?.memberId) socket.leave(`member:${payload.memberId}`);
+          if (payload?.tableId) socket.leave(`table:${payload.tableId}`);
+        }
+      );
     });
 
     httpServer.listen(PORT, () => {
